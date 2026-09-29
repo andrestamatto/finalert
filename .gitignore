@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+**/.gradle/
+build/
+**/build/
+
+# IDEs
+.idea/
+**/.idea/
+*.iml
+*.ipr
+*.iws
+out/
+**/out/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+**/application-local.yaml
+**/application-local.yml
+**/application-local.properties
+
+# OS files
+.DS_Store
+Thumbs.db

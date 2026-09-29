@@ -1,0 +1,5 @@
+rootProject.name = 'finalert'
+
+include 'alert-engine-service'
+include 'market-data-ingestion-service'
+include 'notification-service'
