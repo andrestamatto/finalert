@@ -2,7 +2,7 @@ package br.dev.andrestamatto.finalert.marketdataingestionservice.application;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.PriceUpdatedEvent;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.RabbitMQProperties;
-import br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients.AwesomeClient;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients.AwesomeClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

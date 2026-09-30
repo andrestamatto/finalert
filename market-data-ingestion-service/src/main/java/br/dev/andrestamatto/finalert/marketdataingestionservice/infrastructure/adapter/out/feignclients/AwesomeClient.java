@@ -1,6 +1,6 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients.config.AwesomeFeignConfig;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients.config.AwesomeFeignConfig;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.web.response.AwesomeApiQuoteResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

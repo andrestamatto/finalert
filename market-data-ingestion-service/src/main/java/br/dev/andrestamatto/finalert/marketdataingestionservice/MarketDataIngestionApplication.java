@@ -1,8 +1,7 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.application.CheckUpdatedPriceUseCase;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.RabbitMQProperties;
-import br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients.config.AwesomeApiProperties;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients.config.AwesomeApiProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

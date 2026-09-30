@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
-public record Price(
+public record MarketPrice(
         String baseCurrency,
         String quoteCurrency,
         String name,
