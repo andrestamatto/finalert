@@ -1,0 +1,33 @@
+package br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients;
+
+import br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients.config.AwesomeFeignConfig;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.web.response.AwesomeApiQuoteResponse;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
+import java.util.Map;
+
+@FeignClient(
+        name="awesome-client",
+        url="${marketdataingestionservice.awesomeapi.url}",
+        configuration = AwesomeFeignConfig.class
+)
+public interface AwesomeClient {
+
+    @GetMapping("/last/{exchangeRequest}")
+    Map<String, AwesomeApiQuoteResponse> last(
+            @PathVariable("exchangeRequest") String exchangeRequest
+    );
+
+    @GetMapping("/daily/{currency}/{days}")
+    List<AwesomeApiQuoteResponse> daily(
+            @PathVariable("currency") String currency,
+            @PathVariable("days") int days,
+            @RequestParam(name = "start_date", required = false) String startDate,
+            @RequestParam(name = "end_date", required = false) String endDate
+    );
+
+}

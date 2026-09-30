@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.market_data_ingestion_service;
+package br.dev.andrestamatto.finalert.marketdataingestionservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
