@@ -1,0 +1,43 @@
+package br.dev.andrestamatto.finalert.marketdataingestionservice.web.response;
+
+import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.Price;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public record AwesomeApiQuoteResponse(
+        String code,
+        String codein,
+        String name,
+        BigDecimal high,
+        BigDecimal low,
+        @JsonProperty("varBid") BigDecimal variation,
+        @JsonProperty("pctChange") BigDecimal percentChange,
+        BigDecimal bid,
+        BigDecimal ask,
+        String timestamp,
+        @JsonProperty("create_date") String createdAt
+) {
+    public Price toDomain() {
+        return new Price(
+                code,
+                codein,
+                name,
+                high,
+                low,
+                variation,
+                percentChange,
+                bid,
+                ask,
+                Instant.ofEpochSecond(Long.parseLong(timestamp)),
+                LocalDateTime.parse(
+                        createdAt,
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                )
+        );
+    }
+
+}
