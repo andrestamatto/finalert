@@ -9,10 +9,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -31,18 +28,33 @@ public class CheckUpdatedPriceUseCase {
         this.rabbitMQProperties = rabbitMQProperties;
     }
 
-    public void registerPrice(String price){
-        if (price == null || price.isBlank()) {
+    public void registerPrice(String prices){
+        if (prices == null || prices.isBlank()) {
             // TODO: throw issues to GlobalHandlerException
             return;
         }
 
-        var normalizedPrice = price.trim().toUpperCase();
+        var normalizedPrice = Set.of(prices.trim().toUpperCase().split(","));
 
-        if (monitoredPrices.add(normalizedPrice)) {
+        if (monitoredPrices.addAll(normalizedPrice)) {
             log.info("Price registered for monitoring: {}", normalizedPrice);
         }
     }
+
+    public void unregisterPrice(String prices) {
+        if (prices == null || prices.isBlank()) {
+            // TODO: throw issues to GlobalHandlerException
+            return;
+        }
+        log.info("The following prices will be unregestered: {}", prices);
+
+        var pricesToBeUnregistered = Set.of(prices.trim().toUpperCase().split(","));
+        monitoredPrices.removeAll(pricesToBeUnregistered);
+
+        log.info("Remaining prices registered for monitoring: {}", String.join(",", monitoredPrices));
+
+    }
+
 
     @Scheduled(fixedRateString = "PT30S")
     public void execute() {
