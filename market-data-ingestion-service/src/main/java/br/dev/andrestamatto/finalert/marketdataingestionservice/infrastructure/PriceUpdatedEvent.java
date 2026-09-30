@@ -1,6 +1,6 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.Price;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPrice;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -17,7 +17,7 @@ public record PriceUpdatedEvent(
         return UUID.randomUUID();
     }
 
-    public static PriceUpdatedEvent  fromDomain(String symbol, Price price) {
+    public static PriceUpdatedEvent  fromDomain(String symbol, MarketPrice price) {
         return new PriceUpdatedEvent(
                 generateUUID(),
                 symbol,

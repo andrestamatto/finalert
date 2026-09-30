@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.web.feignclients.config;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients.config;
 
 import feign.RequestInterceptor;
 import org.springframework.context.annotation.Bean;

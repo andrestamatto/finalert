@@ -1,6 +1,6 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice.web.response;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.Price;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPrice;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -21,8 +21,8 @@ public record AwesomeApiQuoteResponse(
         String timestamp,
         @JsonProperty("create_date") String createdAt
 ) {
-    public Price toDomain() {
-        return new Price(
+    public MarketPrice toDomain() {
+        return new MarketPrice(
                 code,
                 codein,
                 name,
