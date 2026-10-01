@@ -39,24 +39,6 @@ public class CheckUpdatedPriceController {
                 );
     }
 
-    @PostMapping(value = "/symbols")
-    public ResponseEntity<?> registerAll(@RequestBody Set<String> symbols) {
-
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping(value = "/{symbol}")
-    public ResponseEntity<?> unregister(@PathVariable String symbol){
-
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping(value = "/{symbol}")
-    public ResponseEntity<?> unregisterAll(@RequestBody Set<String> symbols) {
-
-        return ResponseEntity.ok().build();
-    }
-
     private URI location(String path) {
         return ServletUriComponentsBuilder
                 .fromCurrentRequest()
