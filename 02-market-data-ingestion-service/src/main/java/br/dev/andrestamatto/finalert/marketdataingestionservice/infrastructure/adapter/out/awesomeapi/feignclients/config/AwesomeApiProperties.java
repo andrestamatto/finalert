@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients.config;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.awesomeapi.feignclients.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

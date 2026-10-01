@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.application.event;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPrice;
 

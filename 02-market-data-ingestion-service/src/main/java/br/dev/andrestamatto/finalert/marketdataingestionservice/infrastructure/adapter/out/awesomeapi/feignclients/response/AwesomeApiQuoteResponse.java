@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.web.response;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.awesomeapi.feignclients.response;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPrice;
 import com.fasterxml.jackson.annotation.JsonProperty;

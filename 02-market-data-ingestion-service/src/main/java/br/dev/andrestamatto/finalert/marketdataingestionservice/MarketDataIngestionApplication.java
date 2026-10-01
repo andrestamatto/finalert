@@ -1,7 +1,7 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.RabbitMQProperties;
-import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.feignclients.config.AwesomeApiProperties;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.rabbitmq.config.RabbitMqPublisherProperties;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.awesomeapi.feignclients.config.AwesomeApiProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableConfigurationProperties({
 		AwesomeApiProperties.class,
-		RabbitMQProperties.class
+		RabbitMqPublisherProperties.class
 })
 public class MarketDataIngestionApplication {
 	public static void main(String[] args) {
