@@ -47,7 +47,7 @@ O sistema é composto por 3 microsserviços principais e componentes de infraest
 
 ## 3. Descrição dos Microsserviços
 
-### 3.1. `market-data-ingestion-service`
+### 3.1. `02-market-data-ingestion-service`
 * **Papel:** Ingestão contínua de dados de mercado.
 * **Mecanismo:** Executa consultas periódicas (*Polling*) via protocolo HTTP REST a APIs públicas de mercado utilizando o recurso `@Scheduled` do Spring Framework.
 * **Fluxo de Dados:**
@@ -55,7 +55,7 @@ O sistema é composto por 3 microsserviços principais e componentes de infraest
   2. Mapeia a resposta da API externa para o modelo interno.
   3. Publica o evento `PriceUpdatedEvent` no broker de mensageria.
 
-### 3.2. `alert-engine-service`
+### 3.2. `01-alert-engine-service`
 * **Papel:** Core de negócios e avaliação de regras de alertas.
 * **Mecanismo:** Gerencia o cadastro de alertas via interface REST (Swagger) e processa de forma assíncrona as variações de preço consumidas da mensageria.
 * **Fluxo de Dados:**
@@ -65,7 +65,7 @@ O sistema é composto por 3 microsserviços principais e componentes de infraest
   4. Avalia as condições ativas (ex: `Preço Atual >= Preço Alvo`).
   5. Atualiza o status da regra para evitar disparos duplicados e publica o evento `AlertTriggeredEvent`.
 
-### 3.3. `notification-service`
+### 3.3. `03-notification-service`
 * **Papel:** Entrega de notificações aos usuários.
 * **Mecanismo:** Consumidor reativo responsável por transformar eventos de alerta em mensagens finais de comunicação.
 * **Fluxo de Dados:**
@@ -107,7 +107,7 @@ O desacoplamento entre os serviços é garantido pelo uso de um broker de mensag
 
 ---
 
-## 5. Modelagem de Dados (`alert-engine-service`)
+## 5. Modelagem de Dados (`01-alert-engine-service`)
 
 Entidade principal mantida no PostgreSQL:
 

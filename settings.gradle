@@ -3,3 +3,7 @@ rootProject.name = 'finalert'
 include 'alert-engine-service'
 include 'market-data-ingestion-service'
 include 'notification-service'
+
+project(':alert-engine-service').projectDir = file('01-alert-engine-service')
+project(':market-data-ingestion-service').projectDir = file('02-market-data-ingestion-service')
+project(':notification-service').projectDir = file('03-notification-service')
