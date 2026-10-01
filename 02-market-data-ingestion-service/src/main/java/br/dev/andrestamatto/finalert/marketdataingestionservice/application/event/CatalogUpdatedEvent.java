@@ -24,7 +24,7 @@ public record CatalogUpdatedEvent(
         return new CatalogUpdatedEvent(
                 generateUUID(),
                 marketPairs.stream().collect(Collectors.toMap(
-                    MarketPair::pair,
+                    MarketPair::name,
                         MarketPair::description
                 )),
                 now,
