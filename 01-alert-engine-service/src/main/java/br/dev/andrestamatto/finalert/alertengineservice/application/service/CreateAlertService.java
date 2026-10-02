@@ -42,5 +42,8 @@ public class CreateAlertService implements CreateAlertUseCase {
                 null,
                 null
         );
+
+        // Falta salvar no banco
+        // Falta enviar alerta para RabbitMQ
     }
 }
