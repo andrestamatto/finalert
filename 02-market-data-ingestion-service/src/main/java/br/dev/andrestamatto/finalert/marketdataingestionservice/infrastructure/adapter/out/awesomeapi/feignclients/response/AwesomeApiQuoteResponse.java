@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.web.response;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.awesomeapi.feignclients.response;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPrice;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 public record AwesomeApiQuoteResponse(
@@ -36,7 +37,7 @@ public record AwesomeApiQuoteResponse(
                 LocalDateTime.parse(
                         createdAt,
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                )
+                ).atZone(ZoneId.of("America/Sao_Paulo")).toInstant()
         );
     }
 

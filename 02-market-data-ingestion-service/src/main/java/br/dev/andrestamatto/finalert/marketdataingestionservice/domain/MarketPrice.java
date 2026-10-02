@@ -2,7 +2,6 @@ package br.dev.andrestamatto.finalert.marketdataingestionservice.domain;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 public record MarketPrice(
         String baseCurrency,
@@ -15,6 +14,6 @@ public record MarketPrice(
         BigDecimal bid,
         BigDecimal ask,
         Instant quotedAt,
-        LocalDateTime createdAt
+        Instant createdAt
 ) {
 }

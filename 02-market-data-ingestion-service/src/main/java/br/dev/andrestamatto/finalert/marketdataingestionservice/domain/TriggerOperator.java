@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.alertengineservice.domain;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.domain;
 
 public enum TriggerOperator {
     GTE,
