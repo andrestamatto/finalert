@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository.entity;
+package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository.entity;
 
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertStatus;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.TriggerOperator;
@@ -15,7 +15,7 @@ import java.util.UUID;
 @Table(name="tb_alerts")
 public class AlertEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    //@GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "user_email", nullable = false, length = 320)

@@ -1,10 +1,10 @@
-package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository;
+package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository;
 
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.AlertRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.Alert;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertId;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertStatus;
-import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository.mapper.AlertEntityMapper;
+import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository.mapper.AlertEntityMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

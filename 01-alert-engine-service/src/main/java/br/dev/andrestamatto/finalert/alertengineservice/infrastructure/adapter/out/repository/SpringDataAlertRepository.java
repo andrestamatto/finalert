@@ -1,7 +1,7 @@
-package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository;
+package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository;
 
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertStatus;
-import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository.entity.AlertEntity;
+import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository.entity.AlertEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

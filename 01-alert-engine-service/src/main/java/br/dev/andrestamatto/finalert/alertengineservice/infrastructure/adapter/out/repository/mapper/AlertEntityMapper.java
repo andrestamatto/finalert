@@ -1,8 +1,8 @@
-package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository.mapper;
+package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository.mapper;
 
 import br.dev.andrestamatto.finalert.alertengineservice.domain.Alert;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertId;
-import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.repository.entity.AlertEntity;
+import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.out.repository.entity.AlertEntity;
 import org.springframework.stereotype.Component;
 
 @Component
