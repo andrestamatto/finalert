@@ -18,10 +18,19 @@ public class MarketCatalogUpdatedService implements MarketCatalogUpdatedUseCase 
 
     @Override
     public void save(MarketCatalog marketCatalog) {
+        if (!marketCatalogRepository.saveIfAbsent(marketCatalog)) {
+            log.info(
+                    "Ignoring duplicate MarketCatalogUpdatedEvent: eventId={}",
+                    marketCatalog.eventId()
+            );
+            return;
+        }
 
-        log.info("Iniciando update de market catalog: {}", marketCatalog);
-
-        marketCatalogRepository.save(marketCatalog);
+        log.info(
+                "Updated market catalog saved: eventId={}, version={}",
+                marketCatalog.eventId(),
+                marketCatalog.version()
+        );
     }
 
 }

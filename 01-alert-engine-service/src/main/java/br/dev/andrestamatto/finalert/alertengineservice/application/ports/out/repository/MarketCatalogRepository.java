@@ -5,7 +5,7 @@ import br.dev.andrestamatto.finalert.alertengineservice.domain.MarketCatalog;
 import java.util.Optional;
 
 public interface MarketCatalogRepository {
-    void save(MarketCatalog catalog);
+    boolean saveIfAbsent(MarketCatalog catalog);
 
     Optional<MarketCatalog> findCurrent();
 

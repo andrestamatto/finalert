@@ -3,6 +3,7 @@ package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.MarketCatalogRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.MarketCatalog;
 import br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.repository.mapper.MarketCatalogEntityMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -19,10 +20,20 @@ public class JpaMarketCatalogtRepositoryAdapter implements MarketCatalogReposito
     }
 
     @Override
-    public void save(MarketCatalog catalog) {
-        repository.save(
-                marketCatalogEntityMapper.toEntity(catalog)
-        );
+    public boolean saveIfAbsent(MarketCatalog catalog) {
+        if (repository.existsById(catalog.eventId())) {
+            return false;
+        }
+
+        try {
+            repository.saveAndFlush(marketCatalogEntityMapper.toEntity(catalog));
+            return true;
+        } catch (DataIntegrityViolationException exception) {
+            if (repository.existsById(catalog.eventId())) {
+                return false;
+            }
+            throw exception;
+        }
     }
 
     @Override
