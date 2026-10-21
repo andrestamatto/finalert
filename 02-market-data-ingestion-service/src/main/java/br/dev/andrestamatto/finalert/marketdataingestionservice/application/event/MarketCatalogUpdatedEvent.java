@@ -1,6 +1,7 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice.application.event;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketCatalog;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPair;
 
 import java.time.Instant;
 import java.util.Map;
@@ -22,8 +23,8 @@ public record MarketCatalogUpdatedEvent(
         return new MarketCatalogUpdatedEvent(
                 generateUUID(),
                 catalog.pairs().stream().collect(Collectors.toMap(
-                        pair -> pair.name(),
-                        pair -> pair.description()
+                        MarketPair::name,
+                        MarketPair::description
                 )),
                 catalog.updatedAt(),
                 catalog.version()

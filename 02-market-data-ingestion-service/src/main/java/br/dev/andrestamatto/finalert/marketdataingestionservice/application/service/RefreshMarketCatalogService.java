@@ -2,7 +2,6 @@ package br.dev.andrestamatto.finalert.marketdataingestionservice.application.ser
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.MarketCatalogUpdatedEvent;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.providers.AvailableMarketCatalogProvider;
-import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.publishers.MarketCatalogUpdatedEventPublisher;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.repository.MarketCatalogRepository;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.usecase.RefreshMarketCatalogUseCase;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketCatalog;
@@ -23,28 +22,25 @@ public class RefreshMarketCatalogService implements RefreshMarketCatalogUseCase 
 
     private final AvailableMarketCatalogProvider catalogProvider;
     private final MarketCatalogRepository marketCatalogRepository;
-    private final MarketCatalogUpdatedEventPublisher eventPublisher;
     private final Clock clock;
 
     public RefreshMarketCatalogService(
             AvailableMarketCatalogProvider catalogProvider,
             MarketCatalogRepository marketCatalogRepository,
-            MarketCatalogUpdatedEventPublisher eventPublisher,
             Clock clock
     ) {
         this.catalogProvider = catalogProvider;
         this.marketCatalogRepository = marketCatalogRepository;
-        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
     @Override
     public void execute() throws Exception {
         var marketPairs = Set.copyOf(catalogProvider.fetchAvailableMarketPairsCatalog());
-        refresh(marketPairs, 1);
+        refreshCatalog(marketPairs, 1);
     }
 
-    private void refresh(Set<MarketPair> marketPairs, int attempt) {
+    private void refreshCatalog(Set<MarketPair> marketPairs, int attempt) {
         var currentCatalog = marketCatalogRepository.findCurrent();
 
         if (currentCatalog.map(catalog -> catalog.pairs().equals(marketPairs)).orElse(false)) {
@@ -57,10 +53,12 @@ public class RefreshMarketCatalogService implements RefreshMarketCatalogUseCase 
                 .map(MarketCatalog::version)
                 .map(Math::incrementExact)
                 .orElse(1L);
+
         var catalog = new MarketCatalog(marketPairs, version, now);
+        var event = MarketCatalogUpdatedEvent.fromDomain(catalog);
 
         try {
-            marketCatalogRepository.save(catalog);
+            marketCatalogRepository.saveWithOutbox(catalog, event);
         } catch (DuplicateKeyException exception) {
             if (attempt >= MAX_VERSION_CONFLICT_ATTEMPTS) {
                 throw exception;
@@ -72,12 +70,7 @@ public class RefreshMarketCatalogService implements RefreshMarketCatalogUseCase 
                     attempt,
                     MAX_VERSION_CONFLICT_ATTEMPTS
             );
-            refresh(marketPairs, attempt + 1);
-            return;
+            refreshCatalog(marketPairs, attempt + 1);
         }
-
-        eventPublisher.publish(
-                MarketCatalogUpdatedEvent.fromDomain(catalog)
-        );
     }
 }

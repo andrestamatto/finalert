@@ -5,13 +5,23 @@ spring:
     mongodb:
       auto-index-creation: true
   rabbitmq:
+    publisher-confirm-type: correlated
+    publisher-returns: true
     template:
+      mandatory: true
       retry:
+        # Short transport retry; durable retries are controlled by the MongoDB outbox.
         enabled: true
-        initial-interval: 1s
-        max-interval: 10s
+        initial-interval: 250ms
+        max-interval: 1s
         multiplier: 2.0
-        max-attempts: 3
+        max-attempts: 2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,marketcatalogoutbox}
 
 finalert:
   rabbitmq:
@@ -24,9 +34,11 @@ finalert:
       market-price-updated:
         exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
         routing-key: ${MARKET_PRICE_UPDATED_ROUTING_KEY:market.price.updated}
+        confirm-timeout: ${RABBITMQ_PUBLISH_CONFIRM_TIMEOUT:PT5S}
       market-catalog-updated:
         exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
         routing-key: ${MARKET_CATALOG_UPDATED_ROUTING_KEY:market.catalog.updated}
+        confirm-timeout: ${RABBITMQ_PUBLISH_CONFIRM_TIMEOUT:PT5S}
 
 marketdataingestionservice:
   awesomeapi:
@@ -37,3 +49,12 @@ market-data:
   catalog-refresh-cron: ${MARKET_CATALOG_REFRESH_CRON:0 0 3 * * *}
   catalog-refresh-zone: ${MARKET_CATALOG_REFRESH_ZONE:America/Fortaleza}
   price-refresh-fixed-rate: ${MARKET_PRICE_REFRESH_FIXED_RATE:PT30S}
+  outbox:
+    publish-fixed-delay: ${MARKET_CATALOG_OUTBOX_PUBLISH_FIXED_DELAY:PT1S}
+    max-publish-attempts: ${MARKET_CATALOG_OUTBOX_MAX_PUBLISH_ATTEMPTS:3}
+    max-events-per-execution: ${MARKET_CATALOG_OUTBOX_MAX_EVENTS_PER_EXECUTION:10}
+    initial-retry-delay: ${MARKET_CATALOG_OUTBOX_INITIAL_RETRY_DELAY:PT5S}
+    retry-multiplier: ${MARKET_CATALOG_OUTBOX_RETRY_MULTIPLIER:2.0}
+    processing-timeout: ${MARKET_CATALOG_OUTBOX_PROCESSING_TIMEOUT:PT2M}
+    cleanup-fixed-delay: ${MARKET_CATALOG_OUTBOX_CLEANUP_FIXED_DELAY:PT1H}
+    published-retention: ${MARKET_CATALOG_OUTBOX_PUBLISHED_RETENTION:P7D}

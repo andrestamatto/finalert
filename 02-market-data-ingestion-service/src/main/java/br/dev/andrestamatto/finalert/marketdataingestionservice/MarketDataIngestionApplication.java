@@ -3,11 +3,14 @@ package br.dev.andrestamatto.finalert.marketdataingestionservice;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.rabbitmq.config.RabbitMqConsumersProperties;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.rabbitmq.config.RabbitMqPublisherProperties;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.awesomeapi.feignclients.config.AwesomeApiProperties;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.application.config.MarketCatalogOutboxProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
@@ -18,7 +21,8 @@ import java.time.Clock;
 @EnableConfigurationProperties({
 		AwesomeApiProperties.class,
 		RabbitMqPublisherProperties.class,
-		RabbitMqConsumersProperties.class
+		RabbitMqConsumersProperties.class,
+		MarketCatalogOutboxProperties.class
 })
 public class MarketDataIngestionApplication {
 	public static void main(String[] args) {
@@ -28,5 +32,10 @@ public class MarketDataIngestionApplication {
 	@Bean
 	Clock applicationClock() {
 		return Clock.systemUTC();
+	}
+
+	@Bean
+	MongoTransactionManager mongoTransactionManager(MongoDatabaseFactory databaseFactory) {
+		return new MongoTransactionManager(databaseFactory);
 	}
 }

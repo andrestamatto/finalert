@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.mongodb;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.mongodb.repository;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.repository.MonitoredMarketPairsRepository;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPriceAlert;

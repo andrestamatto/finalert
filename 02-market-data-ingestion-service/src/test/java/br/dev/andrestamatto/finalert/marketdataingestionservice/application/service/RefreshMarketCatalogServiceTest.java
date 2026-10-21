@@ -2,7 +2,6 @@ package br.dev.andrestamatto.finalert.marketdataingestionservice.application.ser
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.MarketCatalogUpdatedEvent;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.providers.AvailableMarketCatalogProvider;
-import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.publishers.MarketCatalogUpdatedEventPublisher;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.repository.MarketCatalogRepository;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketCatalog;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPair;
@@ -38,9 +37,6 @@ class RefreshMarketCatalogServiceTest {
     @Mock
     private MarketCatalogRepository repository;
 
-    @Mock
-    private MarketCatalogUpdatedEventPublisher publisher;
-
     private RefreshMarketCatalogService service;
 
     @BeforeEach
@@ -48,7 +44,6 @@ class RefreshMarketCatalogServiceTest {
         service = new RefreshMarketCatalogService(
                 catalogProvider,
                 repository,
-                publisher,
                 Clock.fixed(NOW, ZoneOffset.UTC)
         );
     }
@@ -63,8 +58,10 @@ class RefreshMarketCatalogServiceTest {
 
         var catalogCaptor = ArgumentCaptor.forClass(MarketCatalog.class);
         var eventCaptor = ArgumentCaptor.forClass(MarketCatalogUpdatedEvent.class);
-        verify(repository).save(catalogCaptor.capture());
-        verify(publisher).publish(eventCaptor.capture());
+        verify(repository).saveWithOutbox(
+                catalogCaptor.capture(),
+                eventCaptor.capture()
+        );
 
         assertThat(catalogCaptor.getValue())
                 .isEqualTo(new MarketCatalog(pairs, 1L, NOW));
@@ -84,8 +81,10 @@ class RefreshMarketCatalogServiceTest {
 
         service.execute();
 
-        verify(repository, never()).save(org.mockito.ArgumentMatchers.any());
-        verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
+        verify(repository, never()).saveWithOutbox(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
     }
 
     @Test
@@ -103,12 +102,15 @@ class RefreshMarketCatalogServiceTest {
         service.execute();
 
         var catalogCaptor = ArgumentCaptor.forClass(MarketCatalog.class);
-        verify(repository).save(catalogCaptor.capture());
-        verify(publisher).publish(org.mockito.ArgumentMatchers.argThat(event ->
-                event.version() == 8L && event.updatedAt().equals(NOW)
-        ));
+        var eventCaptor = ArgumentCaptor.forClass(MarketCatalogUpdatedEvent.class);
+        verify(repository).saveWithOutbox(
+                catalogCaptor.capture(),
+                eventCaptor.capture()
+        );
         assertThat(catalogCaptor.getValue())
                 .isEqualTo(new MarketCatalog(newPairs, 8L, NOW));
+        assertThat(eventCaptor.getValue().version()).isEqualTo(8L);
+        assertThat(eventCaptor.getValue().updatedAt()).isEqualTo(NOW);
     }
 
     @Test
@@ -120,15 +122,23 @@ class RefreshMarketCatalogServiceTest {
                 .thenReturn(Optional.of(catalog(2L, "BTC-BRL")));
         doThrow(new DuplicateKeyException("duplicate version"))
                 .doNothing()
-                .when(repository).save(org.mockito.ArgumentMatchers.any());
+                .when(repository).saveWithOutbox(
+                        org.mockito.ArgumentMatchers.any(),
+                        org.mockito.ArgumentMatchers.any()
+                );
 
         service.execute();
 
         var captor = ArgumentCaptor.forClass(MarketCatalog.class);
-        verify(repository, org.mockito.Mockito.times(2)).save(captor.capture());
+        var eventCaptor = ArgumentCaptor.forClass(MarketCatalogUpdatedEvent.class);
+        verify(repository, org.mockito.Mockito.times(2)).saveWithOutbox(
+                captor.capture(),
+                eventCaptor.capture()
+        );
         assertThat(captor.getAllValues()).extracting(MarketCatalog::version)
                 .containsExactly(2L, 3L);
-        verify(publisher).publish(org.mockito.ArgumentMatchers.argThat(event -> event.version() == 3L));
+        assertThat(eventCaptor.getAllValues()).extracting(MarketCatalogUpdatedEvent::version)
+                .containsExactly(2L, 3L);
     }
 
     @Test
@@ -138,8 +148,10 @@ class RefreshMarketCatalogServiceTest {
 
         assertThatThrownBy(service::execute).isSameAs(failure);
 
-        verify(repository, never()).save(org.mockito.ArgumentMatchers.any());
-        verify(publisher, never()).publish(org.mockito.ArgumentMatchers.any());
+        verify(repository, never()).saveWithOutbox(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
     }
 
     private MarketCatalog catalog(long version, String symbol) {

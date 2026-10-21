@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.mongodb;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.mongodb.repository;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.mongodb.document.MarketPriceAlertDocument;
 import org.springframework.data.mongodb.repository.MongoRepository;
