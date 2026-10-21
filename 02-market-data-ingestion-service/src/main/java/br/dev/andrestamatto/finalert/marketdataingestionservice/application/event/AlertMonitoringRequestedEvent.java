@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public record MonitoredMarketPricesEvent(
+public record AlertMonitoringRequestedEvent(
         @NotBlank
         String eventId,
 
@@ -28,7 +28,7 @@ public record MonitoredMarketPricesEvent(
         @NotNull
         Instant occurredAt
 ) {
-    public static MarketPriceAlert toDomain(MonitoredMarketPricesEvent event) {
+    public static MarketPriceAlert toDomain(AlertMonitoringRequestedEvent event) {
         return new MarketPriceAlert(
             UUID.fromString(event.alertId()),
             event.symbol(),

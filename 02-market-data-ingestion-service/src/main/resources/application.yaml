@@ -1,3 +1,39 @@
 spring:
   application:
     name: finalert.market-data-ingestion-service
+  data:
+    mongodb:
+      auto-index-creation: true
+  rabbitmq:
+    template:
+      retry:
+        enabled: true
+        initial-interval: 1s
+        max-interval: 10s
+        multiplier: 2.0
+        max-attempts: 3
+
+finalert:
+  rabbitmq:
+    consumers:
+      market-price-alert:
+        queue-name: ${MARKET_PRICE_ALERT_QUEUE:market-price-alert}
+        exchange-name: ${ALERT_EVENTS_EXCHANGE:alert.events}
+        routing-key: ${ALERT_MONITORING_REQUESTED_ROUTING_KEY:alert.monitoring.requested}
+    publishers:
+      market-price-updated:
+        exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
+        routing-key: ${MARKET_PRICE_UPDATED_ROUTING_KEY:market.price.updated}
+      market-catalog-updated:
+        exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
+        routing-key: ${MARKET_CATALOG_UPDATED_ROUTING_KEY:market.catalog.updated}
+
+marketdataingestionservice:
+  awesomeapi:
+    api-key: ${AWESOMEAPI_KEY:}
+    url: ${AWESOMEAPI_URL:https://economia.awesomeapi.com.br/json}
+
+market-data:
+  catalog-refresh-cron: ${MARKET_CATALOG_REFRESH_CRON:0 0 3 * * *}
+  catalog-refresh-zone: ${MARKET_CATALOG_REFRESH_ZONE:America/Fortaleza}
+  price-refresh-fixed-rate: ${MARKET_PRICE_REFRESH_FIXED_RATE:PT30S}

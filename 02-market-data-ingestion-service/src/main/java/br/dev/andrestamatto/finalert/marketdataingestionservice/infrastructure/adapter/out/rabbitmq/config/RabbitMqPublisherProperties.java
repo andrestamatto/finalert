@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("finalert.rabbitmq.publishers")
 public record RabbitMqPublisherProperties(
-        EventProperties priceUpdated,
+        EventProperties marketPriceUpdated,
         EventProperties marketCatalogUpdated
 ) {
     public record EventProperties(

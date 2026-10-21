@@ -14,7 +14,7 @@ public class CheckUpdatedPriceScheduler {
         this.checkUpdatedPriceUseCase = checkUpdatedPriceUseCase;
     }
 
-    @Scheduled(fixedRateString = "PT30S")
+    @Scheduled(fixedRateString = "${market-data.price-refresh-fixed-rate:PT30S}")
     public void execute() {
         checkUpdatedPriceUseCase.execute();
     }

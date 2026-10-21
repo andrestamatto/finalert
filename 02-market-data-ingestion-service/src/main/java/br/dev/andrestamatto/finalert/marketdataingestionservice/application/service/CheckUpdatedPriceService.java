@@ -1,15 +1,16 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice.application.service;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.PriceUpdatedEvent;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.MarketPriceUpdatedEvent;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.providers.MarketQuoteProvider;
-import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.publishers.PriceUpdatedEventPublisher;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.publishers.MarketPriceUpdatedEventPublisher;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.repository.MonitoredMarketPairsRepository;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.usecase.CheckUpdatedPriceUseCase;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPriceAlert;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Slf4j
 @Service
@@ -17,12 +18,12 @@ public class CheckUpdatedPriceService implements CheckUpdatedPriceUseCase {
 
     private final MonitoredMarketPairsRepository marketPairsRepository;
     private final MarketQuoteProvider marketQuoteProvider;
-    private final PriceUpdatedEventPublisher priceUpdatedEventPublisher;
+    private final MarketPriceUpdatedEventPublisher marketPriceUpdatedEventPublisher;
 
-    public CheckUpdatedPriceService(MonitoredMarketPairsRepository marketPairsRepository, MarketQuoteProvider marketQuoteProvider, PriceUpdatedEventPublisher priceUpdatedEventPublisher) {
+    public CheckUpdatedPriceService(MonitoredMarketPairsRepository marketPairsRepository, MarketQuoteProvider marketQuoteProvider, MarketPriceUpdatedEventPublisher marketPriceUpdatedEventPublisher) {
         this.marketPairsRepository = marketPairsRepository;
         this.marketQuoteProvider = marketQuoteProvider;
-        this.priceUpdatedEventPublisher = priceUpdatedEventPublisher;
+        this.marketPriceUpdatedEventPublisher = marketPriceUpdatedEventPublisher;
     }
 
     @Override
@@ -34,11 +35,12 @@ public class CheckUpdatedPriceService implements CheckUpdatedPriceUseCase {
             return;
         }
 
-        var monitoredPairsStr = String.join(",",
-                monitoredPairs.stream()
-                        .map(MarketPriceAlert::symbol)
-                        .collect(Collectors.toSet())
-        );
+        Set<String> monitoredSymbols = new TreeSet<>();
+        monitoredPairs.stream()
+                .map(MarketPriceAlert::symbol)
+                .forEach(monitoredSymbols::add);
+
+        var monitoredPairsStr = String.join(",", monitoredSymbols);
 
         var marketQuotes = marketQuoteProvider.fetchLastUpdatedMarketQuotes(monitoredPairsStr);
 
@@ -49,12 +51,20 @@ public class CheckUpdatedPriceService implements CheckUpdatedPriceUseCase {
 
         log.info("Received {} updated prices.", marketQuotes.size());
 
+        Set<String> returnedSymbols = new TreeSet<>();
+
         marketQuotes.forEach(quote -> {
             var symbol = String.join("-",quote.baseCurrency(),quote.quoteCurrency());
-            priceUpdatedEventPublisher.publish(
-                    PriceUpdatedEvent.fromDomain(symbol, quote)
+            returnedSymbols.add(symbol);
+            marketPriceUpdatedEventPublisher.publish(
+                    MarketPriceUpdatedEvent.fromDomain(symbol, quote)
             );
         });
 
+        var missingSymbols = new TreeSet<>(monitoredSymbols);
+        missingSymbols.removeAll(returnedSymbols);
+        if (!missingSymbols.isEmpty()) {
+            log.warn("AwesomeAPI did not return quotes for monitored symbols: {}", missingSymbols);
+        }
     }
 }

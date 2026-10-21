@@ -41,9 +41,9 @@ public class RabbitMQConfig implements RabbitListenerConfigurer {
     }
 
     @Bean
-    public TopicExchange priceUpdatedEventsExchange() {
+    public TopicExchange marketPriceUpdatedEventsExchange() {
         return new TopicExchange(
-                rabbitMqPublisherProperties.priceUpdated().exchangeName(),
+                rabbitMqPublisherProperties.marketPriceUpdated().exchangeName(),
                 true,
                 false
         );
@@ -59,10 +59,10 @@ public class RabbitMQConfig implements RabbitListenerConfigurer {
     }
 
     @Bean
-    public TopicExchange alertEventsExchange() {
+    public TopicExchange alertMonitoringRequestedEventsExchange() {
         return new TopicExchange(
                 rabbitMqConsumersProperties
-                        .monitoredPriceAlert()
+                        .marketPriceAlert()
                         .exchangeName(),
                 true,
                 false
@@ -70,25 +70,25 @@ public class RabbitMQConfig implements RabbitListenerConfigurer {
     }
 
     @Bean
-    public Queue monitoredPriceAlertQueue() {
+    public Queue marketPriceAlertQueue() {
         return QueueBuilder.durable(
                 rabbitMqConsumersProperties
-                        .monitoredPriceAlert()
+                        .marketPriceAlert()
                         .queueName()
         ).build();
     }
 
     @Bean
-    public Binding monitoredPriceAlertBinding(
-            @Qualifier("monitoredPriceAlertQueue") Queue monitoredPriceAlertQueue,
-            @Qualifier("alertEventsExchange") TopicExchange alertEventsExchange
+    public Binding marketPriceAlertBinding(
+            @Qualifier("marketPriceAlertQueue") Queue marketPriceAlertQueue,
+            @Qualifier("alertMonitoringRequestedEventsExchange") TopicExchange alertMonitoringRequestedEventsExchange
     ) {
         return BindingBuilder
-                .bind(monitoredPriceAlertQueue)
-                .to(alertEventsExchange)
+                .bind(marketPriceAlertQueue)
+                .to(alertMonitoringRequestedEventsExchange)
                 .with(
                         rabbitMqConsumersProperties
-                                .monitoredPriceAlert()
+                                .marketPriceAlert()
                                 .routingKey()
                 );
     }

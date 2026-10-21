@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public record PriceUpdatedEvent(
+public record MarketPriceUpdatedEvent(
         UUID eventId,
         String symbol,
         BigDecimal currentPrice,
@@ -17,8 +17,8 @@ public record PriceUpdatedEvent(
         return UUID.randomUUID();
     }
 
-    public static PriceUpdatedEvent  fromDomain(String symbol, MarketPrice price) {
-        return new PriceUpdatedEvent(
+    public static MarketPriceUpdatedEvent fromDomain(String symbol, MarketPrice price) {
+        return new MarketPriceUpdatedEvent(
                 generateUUID(),
                 symbol,
                 price.bid(),

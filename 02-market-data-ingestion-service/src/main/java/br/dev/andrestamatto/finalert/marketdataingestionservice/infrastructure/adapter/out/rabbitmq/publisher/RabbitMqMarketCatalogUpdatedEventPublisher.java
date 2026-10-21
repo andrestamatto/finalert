@@ -1,6 +1,6 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.rabbitmq.publisher;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.CatalogUpdatedEvent;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.MarketCatalogUpdatedEvent;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.publishers.MarketCatalogUpdatedEventPublisher;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.rabbitmq.config.RabbitMqPublisherProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -21,24 +21,25 @@ public class RabbitMqMarketCatalogUpdatedEventPublisher implements MarketCatalog
     }
 
     @Override
-    public void publish(CatalogUpdatedEvent catalogUpdatedEvent) {
-        log.info("Start publishing catalogUpdatedEvent.");
+    public void publish(MarketCatalogUpdatedEvent event) {
+        log.info("Publishing MarketCatalogUpdatedEvent: eventId={}", event.eventId());
 
         try {
             rabbitTemplate.convertAndSend(
                     rabbitPublishersProperties.marketCatalogUpdated().exchangeName(),
                     rabbitPublishersProperties.marketCatalogUpdated().routingKey(),
-                    catalogUpdatedEvent
+                    event
             );
 
-            log.info("CatalogUpdatedEvent submitted for publication: eventId={}", catalogUpdatedEvent.eventId());
+            log.info("MarketCatalogUpdatedEvent submitted for publication: eventId={}", event.eventId());
 
         } catch (AmqpException exception){
-            log.warn(
-                    "Failed to publish price event: eventId={}",
-                    catalogUpdatedEvent.eventId(),
+            log.error(
+                    "Failed to publish MarketCatalogUpdatedEvent: eventId={}",
+                    event.eventId(),
                     exception
             );
+            throw exception;
         }
 
     }
