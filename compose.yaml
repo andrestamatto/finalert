@@ -1,4 +1,20 @@
 services:
+  alert-engine:
+    image: 01-alert-engine-service
+    container_name: 01-alert-engine-service
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+  market-data-ingestion:
+    image: 02-market-data-ingestion-service
+    container_name: 02-market-data-ingestion-service
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      - rabbitmq
+      - mongodb
   mongodb:
     image: mongo:8.3.11-noble
     container_name: finalert-mongodb
