@@ -1,6 +1,6 @@
 package br.dev.andrestamatto.finalert.alertengineservice.web;
 
-import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.CreateAlertCommand;
+import br.dev.andrestamatto.finalert.alertengineservice.application.ports.commands.CreateAlertCommand;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.Alert;
 import br.dev.andrestamatto.finalert.alertengineservice.web.request.CreateAlertRequest;
 import br.dev.andrestamatto.finalert.alertengineservice.web.response.CreateAlertResponse;
@@ -10,8 +10,9 @@ import java.util.Objects;
 
 @Component
 public class CreateAlertWebMapper {
-    public CreateAlertCommand toCommand(String symbol, CreateAlertRequest request) {
+    public CreateAlertCommand toCommand(String idempotencyKey, String symbol, CreateAlertRequest request) {
         return new CreateAlertCommand(
+                idempotencyKey.trim(),
                 request.userEmail(),
                 symbol,
                 request.targetPrice(),

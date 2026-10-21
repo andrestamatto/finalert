@@ -1,3 +1,40 @@
 spring:
   application:
     name: finalert.alert-engine-service
+  rabbitmq:
+    connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:5s}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+      retry:
+        enabled: false
+
+finalert:
+  rabbitmq:
+    publishers:
+      alert-monitoring-requested:
+        exchange-name: ${ALERT_MONITORING_REQUESTED_EXCHANGE:alert.events}
+        routing-key: ${ALERT_MONITORING_REQUESTED_ROUTING_KEY:alert.monitoring.requested}
+  outbox:
+    worker-fixed-delay: ${OUTBOX_WORKER_FIXED_DELAY:1s}
+    batch-size: ${OUTBOX_BATCH_SIZE:20}
+    publisher-confirm-timeout: ${OUTBOX_CONFIRM_TIMEOUT:5s}
+    retry:
+      max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
+      initial-delay: ${OUTBOX_INITIAL_DELAY:1s}
+      max-delay: ${OUTBOX_MAX_DELAY:5m}
+      multiplier: ${OUTBOX_RETRY_MULTIPLIER:2.0}
+      jitter: ${OUTBOX_RETRY_JITTER:0.2}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      rabbitPublisher:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: ${RABBIT_CIRCUIT_WINDOW_SIZE:5}
+        minimum-number-of-calls: ${RABBIT_CIRCUIT_MINIMUM_CALLS:5}
+        failure-rate-threshold: ${RABBIT_CIRCUIT_FAILURE_RATE:100}
+        permitted-number-of-calls-in-half-open-state: 1
+        wait-duration-in-open-state: ${RABBIT_CIRCUIT_OPEN_DURATION:30s}
+        register-health-indicator: true

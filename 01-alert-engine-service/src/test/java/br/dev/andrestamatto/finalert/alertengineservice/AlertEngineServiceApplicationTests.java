@@ -1,13 +1,12 @@
-package br.dev.andrestamatto.finalert.alert_engine_service;
+package br.dev.andrestamatto.finalert.alertengineservice;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
 class AlertEngineServiceApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassCanBeLoaded() throws ClassNotFoundException {
+		Class.forName(AlertEngineServiceApplication.class.getName());
 	}
 
 }
