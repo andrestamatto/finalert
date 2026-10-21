@@ -6,11 +6,13 @@ import br.dev.andrestamatto.finalert.alertengineservice.application.ports.comman
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.AlertRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.messaging.AlertMonitoringRequestedEventEnqueuer;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.CreateAlertRequestRepository;
+import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.MarketCatalogRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.Alert;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertId;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.AlertStatus;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.TriggerOperator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -43,8 +45,16 @@ class CreateAlertServiceTest {
     @Mock
     private CreateAlertRequestRepository requestRepository;
 
+    @Mock
+    private MarketCatalogRepository marketCatalogRepository;
+
     @InjectMocks
     private CreateAlertService service;
+
+    @BeforeEach
+    void configureAvailableMarketPair() {
+        when(marketCatalogRepository.containsPair("USD-BRL")).thenReturn(true);
+    }
 
     @Test
     void createsAlertAndOutboxEventForANewIdempotencyKey() {

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeoutException;
 @Component
 public class RabbitMqMessageBrokerPublisher implements MessageBrokerPublisher {
 
-    static final String CIRCUIT_BREAKER_NAME = "rabbitPublisher";
+    public static final String CIRCUIT_BREAKER_NAME = "rabbitPublisher";
 
     private final RabbitTemplate rabbitTemplate;
     private final OutboxProperties properties;
