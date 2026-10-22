@@ -1,4 +1,29 @@
 services:
+  alert-engine:
+    image: 01-alert-engine-service
+    container_name: 01-alert-engine-service
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - postgres
+      - rabbitmq
+  market-data-ingestion:
+    image: 02-market-data-ingestion-service
+    container_name: 02-market-data-ingestion-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-finalert}:${MONGO_INITDB_ROOT_PASSWORD:-finalert-local}@finalert-mongodb:27017/${MARKET_DATA_MONGODB_DATABASE:-finalert_market_data}?authSource=admin&uuidRepresentation=standard&replicaSet=rs0&directConnection=true
+      SPRING_RABBITMQ_HOST: finalert-rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-finalert}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-finalert-local}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
   mongodb:
     image: mongo:8.3.11-noble
     container_name: finalert-mongodb
@@ -10,14 +35,23 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-finalert}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD:-finalert-local}
       MONGO_INITDB_DATABASE: ${MARKET_DATA_MONGODB_DATABASE:-finalert_market_data}
+      MONGO_REPLICA_SET_KEY: ${MONGO_REPLICA_SET_KEY:-finalert-local-replica-set-key-change-me}
+    entrypoint:
+      - /bin/bash
+      - -ec
+      - |
+        printf '%s' "$$MONGO_REPLICA_SET_KEY" > /tmp/mongodb-keyfile
+        chmod 400 /tmp/mongodb-keyfile
+        chown mongodb:mongodb /tmp/mongodb-keyfile
+        exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /tmp/mongodb-keyfile --bind_ip_all
     volumes:
       - mongodb_data:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "mongosh --quiet --username \"$$MONGO_INITDB_ROOT_USERNAME\" --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping').ok\" | grep 1"]
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$$MONGO_INITDB_ROOT_USERNAME\" --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval 'try { rs.status().ok } catch (error) { rs.initiate({_id: \"rs0\", members: [{_id: 0, host: \"finalert-mongodb:27017\"}]}).ok }' | grep 1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 10
+      start_period: 30s
 
   postgres:
     image: postgres:17.11

@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("finalert.rabbitmq.consumers")
 public record RabbitMqConsumersProperties(
-        EventProperties monitoredPriceAlert
+        EventProperties marketPriceAlert
 ) {
     public record EventProperties(
             String queueName,

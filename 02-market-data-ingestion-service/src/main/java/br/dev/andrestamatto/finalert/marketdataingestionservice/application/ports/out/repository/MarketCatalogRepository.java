@@ -1,16 +1,17 @@
 package br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.repository;
 
-import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPair;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.application.event.MarketCatalogUpdatedEvent;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketCatalog;
 
-import java.time.Instant;
-import java.util.Set;
+import java.util.Optional;
 
 public interface MarketCatalogRepository {
 
-    void replaceCatalog(
-            Set<MarketPair> pairs,
-            long catalogVersion,
-            Instant updatedAt
+    void saveWithOutbox(
+            MarketCatalog catalog,
+            MarketCatalogUpdatedEvent marketCatalogUpdatedEvent
     );
+
+    Optional<MarketCatalog> findCurrent();
 
 }
