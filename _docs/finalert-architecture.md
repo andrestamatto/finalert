@@ -10,28 +10,87 @@ Este documento distingue o que está implementado atualmente do que ainda está 
 
 ```mermaid
 flowchart LR
-    User["Usuário"] -->|"POST /alerts/{symbol}"| AlertEngine["01 alert-engine-service"]
+    classDef done fill:#d1fae5,stroke:#047857,color:#064e3b,stroke-width:2px
+    classDef partial fill:#fef3c7,stroke:#b45309,color:#78350f,stroke-width:2px
+    classDef todo fill:#f3f4f6,stroke:#6b7280,color:#374151,stroke-width:2px,stroke-dasharray:5 5
+    classDef infra fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
 
-    AlertEngine -->|"AlertMonitoringRequestedEvent<br/>alert.monitoring.requested"| AlertExchange[("RabbitMQ<br/>alert.events")]
-    AlertExchange -->|"fila market-price-alert"| MarketData["02 market-data-ingestion-service"]
+    User["Usuário"]
 
-    Awesome["AwesomeAPI<br/>/available e /last/{symbols}"] -->|"HTTP"| MarketData
+    subgraph AlertEngine["01 alert-engine-service"]
+        CreateAlert --> AlertOutbox["✅ Outbox transacional<br/>AlertMonitoringRequestedEvent"]:::done
+        CatalogConsumer["✅ Consumir catálogo<br/>e persistir projeção idempotente"]:::done
+        PriceConsumer["⬜ Consumir<br/>MarketPriceUpdatedEvent"]:::todo
+        EvaluateAlert["⬜ Avaliar condição<br/>e disparar alerta"]:::todo
+        ReleaseEvent["⬜ Publicar<br/>AlertMonitoringReleasedEvent"]:::todo
+        TriggerEvent["⬜ Publicar<br/>AlertTriggeredEvent"]:::todo
 
-    MarketData -->|"MarketCatalogUpdatedEvent<br/>market.catalog.updated"| MarketExchange[("RabbitMQ<br/>market.events")]
-    MarketData -->|"MarketPriceUpdatedEvent<br/>market.price.updated"| MarketExchange
+        PriceConsumer -.-> EvaluateAlert
+        EvaluateAlert -.-> ReleaseEvent
+        EvaluateAlert -.-> TriggerEvent
+    end
 
-    MarketData <--> Mongo[("MongoDB<br/>market_catalog<br/>monitored_alerts")]
-    AlertEngine <--> Postgres[("PostgreSQL<br/>tb_alerts<br/>tb_create_alert_requests<br/>tb_outbox_events")]
+    User -->|"POST /alerts/{symbol}"| CreateAlert
+    AlertOutbox -->|"alert.monitoring.requested"| AlertExchange[("RabbitMQ<br/>alert.events")]:::infra
 
-    MarketExchange -.->|"consumidores ainda não implementados"| AlertEngine
-    AlertEngine -.->|"AlertTriggeredEvent planejado"| Notification["03 notification-service"]
+    subgraph MarketData["02 market-data-ingestion-service"]
+        MonitoringConsumer["✅ Consumir solicitação<br/>e registrar monitored_alerts"]:::done
+        CatalogRefresh["✅ Atualizar catálogo<br/>via /available"]:::done
+        CatalogOutbox["✅ Outbox Mongo<br/>retry, redrive e cleanup"]:::done
+        PricePolling["✅ Consultar cotações<br/>via /last/{symbols}"]:::done
+        PricePublisher["✅ Publicar um evento<br/>por cotação"]:::done
+        ReleaseConsumer["⬜ Consumir liberação<br/>e remover monitoramento"]:::todo
+
+        CatalogRefresh --> CatalogOutbox
+        PricePolling --> PricePublisher
+    end
+
+    AlertExchange -->|"fila market-price-alert"| MonitoringConsumer
+    AlertExchange -.->|"alert.monitoring.released"| ReleaseConsumer
+
+    Awesome["AwesomeAPI"]:::infra -->|"GET /available"| CatalogRefresh
+    PricePolling -->|"GET /last/{symbols}"| Awesome
+
+    CatalogOutbox -->|"market.catalog.updated"| MarketExchange[("RabbitMQ<br/>market.events")]:::infra
+    PricePublisher -->|"market.price.updated"| MarketExchange
+    MarketExchange -->|"fila market-catalog-updated"| CatalogConsumer
+    MarketExchange -.->|"fila ainda não criada"| PriceConsumer
+
+    MonitoringConsumer --> Mongo[("MongoDB<br/>monitored_alerts<br/>market_catalog<br/>market_catalog_outbox")]:::infra
+    CatalogRefresh --> Mongo
+    CatalogOutbox --> Mongo
+    CreateAlert --> Postgres[("PostgreSQL<br/>tb_alerts<br/>tb_create_alert_requests<br/>tb_outbox_events<br/>tb_market_catalog")]:::infra
+    AlertOutbox --> Postgres
+    CatalogConsumer --> Postgres
+
+    subgraph Notification["🟡 03 notification-service — módulo base criado"]
+        TriggerConsumer["⬜ Consumir<br/>AlertTriggeredEvent"]:::todo
+        SendNotification["⬜ Enviar notificação"]:::todo
+        TriggerConsumer -.-> SendNotification
+    end
+
+    TriggerEvent -.->|"alert.triggered"| AlertExchange
+    AlertExchange -.-> TriggerConsumer
 ```
+
+**Legenda:** ✅ implementado no código · 🟡 estrutura parcial · ⬜ ainda não implementado. As setas contínuas representam integrações existentes; as tracejadas representam fluxos planejados.
+
+| Fluxo funcional | Estado atual |
+|---|---|
+| Criação idempotente do alerta e publicação de `AlertMonitoringRequestedEvent` | ✅ Implementado de ponta a ponta |
+| Registro dos alertas monitorados e consulta periódica de preços | ✅ Implementado |
+| Atualização, outbox e consumo do catálogo de mercado | ✅ Implementado de ponta a ponta |
+| Publicação de `MarketPriceUpdatedEvent` | ✅ Implementado até o RabbitMQ |
+| Consumo do preço, avaliação da condição e disparo do alerta | ⬜ Pendente |
+| Liberação do monitoramento após disparo ou cancelamento | ⬜ Pendente |
+| Consumo de `AlertTriggeredEvent` e envio da notificação | 🟡 Módulo criado; comportamento pendente |
+| Persistência de histórico de cotações (`market_quotes`) | ⬜ Pendente |
 
 O `01-alert-engine-service` persiste o alerta e o evento de integração na mesma transação por meio do transactional outbox. O worker do outbox publica `AlertMonitoringRequestedEvent` em `alert.events` com a routing key `alert.monitoring.requested`.
 
-O `02-market-data-ingestion-service` consome esse evento pela fila `market-price-alert`, mantém a projeção `monitored_alerts`, consulta a AwesomeAPI e publica atualizações em `market.events`.
+O `02-market-data-ingestion-service` consome esse evento pela fila `market-price-alert`, mantém a projeção `monitored_alerts`, consulta a AwesomeAPI e publica atualizações em `market.events`. A atualização do catálogo usa uma outbox Mongo transacional, com claim atômico, retry, redrive e limpeza dos eventos publicados.
 
-Os consumidores de `market.catalog.updated` e `market.price.updated` no `01-alert-engine-service` ainda não estão implementados.
+O consumidor de `market.catalog.updated` já está implementado no `01-alert-engine-service` e mantém `tb_market_catalog` de forma idempotente. O consumidor de `market.price.updated` e a avaliação dos alertas ainda não estão implementados.
 
 ### 2.1. Sequência implementada
 
@@ -74,7 +133,8 @@ sequenceDiagram
 | `POST /alerts/{symbol}` | `CreateAlertService.execute(CreateAlertCommand)` | Cria o alerta idempotentemente e enfileira `AlertMonitoringRequestedEvent` no outbox. |
 | `alert.monitoring.requested` | `RabbitMqAlertMonitoringRequestedEventConsumer.consume(AlertMonitoringRequestedEvent)` | Converte o evento e chama o caso de uso de registro. |
 | Registro do monitoramento | `RegisterMonitoredMarketPriceService.execute(MarketPriceAlert)` | Faz upsert do alerta monitorado no MongoDB. |
-| Scheduler de catálogo | `RefreshMarketCatalogService.execute()` | Atualiza `market_catalog` e publica `MarketCatalogUpdatedMessage`. |
+| Scheduler de catálogo | `RefreshMarketCatalogService.execute()` | Atualiza `market_catalog` e grava `MarketCatalogUpdatedEvent` na outbox. |
+| `market.catalog.updated` | `RabbitMqMarketCatalogUpdatedEvent.consume(MarketCatalogUpdatedMessage)` | Persiste o snapshot versionado em `tb_market_catalog`, ignorando o mesmo `eventId` quando reentregue. |
 | Scheduler de cotações | `CheckUpdatedPriceService.execute()` | Consulta cotações e publica `MarketPriceUpdatedEvent`. |
 
 ## 3. Microsserviços
@@ -90,10 +150,11 @@ Responsabilidades implementadas:
 5. Persiste eventos em `tb_outbox_events` na mesma transação do alerta.
 6. Publica `AlertMonitoringRequestedEvent` de forma assíncrona.
 7. Aplica retry persistente, limite de tentativas e circuit breaker na publicação.
+8. Consome `MarketCatalogUpdatedEvent` pela fila `market-catalog-updated`.
+9. Mantém o histórico idempotente do catálogo em `tb_market_catalog`.
 
 Ainda não implementado:
 
-- consumo de `MarketCatalogUpdatedMessage`;
 - consumo de `MarketPriceUpdatedEvent`;
 - avaliação e disparo do alerta;
 - `AlertMonitoringReleasedEvent`;
@@ -106,9 +167,11 @@ Responsabilidades implementadas:
 1. Consome `AlertMonitoringRequestedEvent`.
 2. Mantém a projeção `monitored_alerts` no MongoDB.
 3. Atualiza `market_catalog` a partir de `GET /available` da AwesomeAPI.
-4. Publica `MarketCatalogUpdatedMessage`.
+4. Publica `MarketCatalogUpdatedEvent`.
 5. Consulta `GET /last/{symbols}` para os símbolos monitorados.
 6. Publica um `MarketPriceUpdatedEvent` para cada cotação recebida.
+7. Persiste catálogo e evento na mesma transação Mongo por meio de outbox.
+8. Publica a outbox com retry, limite de tentativas, recuperação de locks, redrive e retenção configuráveis.
 
 Ainda não implementado:
 
@@ -142,12 +205,13 @@ O módulo existe e possui dependências para RabbitMQ e e-mail, mas o consumo de
 }
 ```
 
-### 4.2. `MarketCatalogUpdatedMessage`
+### 4.2. `MarketCatalogUpdatedEvent`
 
 - **Produtor:** `02-market-data-ingestion-service`
 - **Exchange:** `market.events`
 - **Routing key:** `market.catalog.updated`
-- **Consumidor atual:** nenhum
+- **Consumidor:** `01-alert-engine-service`, onde o payload é recebido como `MarketCatalogUpdatedMessage`
+- **Fila:** `market-catalog-updated`
 - **Semântica:** representa um snapshot versionado do catálogo disponível no serviço de ingestão.
 
 ```json
@@ -192,18 +256,18 @@ Os contratos abaixo descrevem a evolução pretendida, mas ainda não possuem pr
 
 ### 6.1. MongoDB — `02-market-data-ingestion-service`
 
-- `market_catalog`: snapshot atual do catálogo, identificado por `_id = "current"`;
+- `market_catalog`: histórico de snapshots do catálogo, com `_id` próprio e `catalogVersion` único;
+- `market_catalog_outbox`: eventos do catálogo nos estados `PENDING`, `PROCESSING`, `PUBLISHED` ou `FAILED`;
 - `monitored_alerts`: projeção dos alertas recebidos por `AlertMonitoringRequestedEvent`, identificada por `alertId`.
 
-Não existe atualmente uma collection persistente de histórico ou de última cotação.
+Não existe atualmente uma collection persistente de histórico ou de última cotação de preços (`market_quotes`).
 
 ### 6.2. PostgreSQL — `01-alert-engine-service`
 
 - `tb_alerts`: alertas cadastrados;
 - `tb_create_alert_requests`: controle de idempotência das requisições;
-- `tb_outbox_events`: eventos pendentes, publicados ou definitivamente falhos.
-
-Ainda não existe a projeção `tb_available_market_pairs`; ela deverá ser criada junto com o consumidor de `MarketCatalogUpdatedMessage`.
+- `tb_outbox_events`: eventos pendentes, publicados ou definitivamente falhos;
+- `tb_market_catalog`: histórico idempotente dos snapshots de catálogo, identificado pelo `eventId`.
 
 ## 7. Tecnologias atuais
 
