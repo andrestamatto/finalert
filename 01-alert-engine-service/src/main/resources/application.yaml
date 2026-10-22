@@ -1,6 +1,12 @@
 spring:
   application:
     name: finalert.alert-engine-service
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   rabbitmq:
     connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:5s}
     publisher-confirm-type: correlated
@@ -12,6 +18,11 @@ spring:
 
 finalert:
   rabbitmq:
+    consumers:
+      market-catalog-updated:
+        queue-name: ${MARKET_CATALOG_UPDATED_QUEUE:market-catalog-updated}
+        exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
+        routing-key: ${MARKET_CATALOG_UPDATED_ROUTING_KEY:market.catalog.updated}
     publishers:
       alert-monitoring-requested:
         exchange-name: ${ALERT_MONITORING_REQUESTED_EXCHANGE:alert.events}
