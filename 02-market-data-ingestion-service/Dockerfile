@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Argumento para o caminho do arquivo JAR gerado pelo Maven/Gradle
-ARG JAR_FILE=./build/libs/*.jar
+ARG JAR_FILE=./build/libs/app.jar
 
 # Copia o arquivo JAR para dentro do container com o nome app.jar
 COPY ${JAR_FILE} app.jar

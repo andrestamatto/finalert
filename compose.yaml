@@ -1,14 +1,29 @@
 services:
   alert-engine:
     image: 01-alert-engine-service
+    build:
+      context: ./01-alert-engine-service
     container_name: 01-alert-engine-service
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://finalert-postgres:5432/finalert_alert_engine
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-finalert}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-finalert-local}
+      SPRING_RABBITMQ_HOST: finalert-rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-finalert}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-finalert-local}
     depends_on:
-      - postgres
-      - rabbitmq
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
   market-data-ingestion:
     image: 02-market-data-ingestion-service
+    build:
+      context: ./02-market-data-ingestion-service
     container_name: 02-market-data-ingestion-service
     restart: unless-stopped
     ports:
@@ -24,6 +39,45 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+  notification:
+    image: 03-notification-service
+    build:
+      context: ./03-notification-service
+    container_name: 03-notification-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8082:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://finalert-postgres:5432/finalert_notification
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-finalert}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-finalert-local}
+      SPRING_RABBITMQ_HOST: finalert-rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-finalert}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-finalert-local}
+      SPRING_MAIL_HOST: finalert-mailpit
+      SPRING_MAIL_PORT: 1025
+      NOTIFICATION_FROM_ADDRESS: ${NOTIFICATION_FROM_ADDRESS:-alerts@finalert.local}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+  mailpit:
+    image: axllent/mailpit:v1.32.0
+    container_name: finalert-mailpit
+    hostname: finalert-mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   mongodb:
     image: mongo:8.3.11-noble
     container_name: finalert-mongodb
