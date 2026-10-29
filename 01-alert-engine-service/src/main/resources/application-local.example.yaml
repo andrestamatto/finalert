@@ -1,0 +1,16 @@
+spring:
+  config:
+    import: "optional:file:${ALERT_ENGINE_ENV_FILE:./.env/alert-engine-service.local.env}[.properties]"
+  datasource:
+    url: ${ALERT_ENGINE_DB_URL:jdbc:postgresql://localhost:5432/finalert_alert_engine}
+    username: ${ALERT_ENGINE_DB_USERNAME:finalert_alert_engine}
+    password: ${ALERT_ENGINE_DB_PASSWORD:finalert-local}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:finalert}
+    password: ${RABBITMQ_PASSWORD:finalert-local}
+
+logging:
+  level:
+    org.flywaydb: DEBUG
