@@ -1,0 +1,11 @@
+spring:
+  config:
+    import: "optional:file:${MARKET_DATA_INGESTION_ENV_FILE:./.env/market-data-ingestion-service.local.env}[.properties]"
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:finalert}
+    password: ${RABBITMQ_PASSWORD:finalert-local}
+  data:
+    mongodb:
+      uri: ${MARKET_DATA_MONGODB_URI:mongodb://finalert:finalert-local@localhost:27017/finalert_market_data?authSource=admin&uuidRepresentation=standard&replicaSet=rs0&directConnection=true}

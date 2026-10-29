@@ -1,0 +1,18 @@
+services:
+  alert-engine:
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    env_file:
+      - ./.env/alert-engine-service.local.env
+
+  market-data-ingestion:
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    env_file:
+      - ./.env/market-data-ingestion-service.local.env
+
+  notification:
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    env_file:
+      - ./.env/notification-service.local.env

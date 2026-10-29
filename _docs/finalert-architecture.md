@@ -2,7 +2,7 @@
 
 ## 1. Visão geral
 
-O FinAlert é uma solução orientada a eventos que cadastra alertas de preço, monitora cotações e envia e-mails quando uma condição é satisfeita. A solução é formada por três serviços, RabbitMQ, PostgreSQL, MongoDB e um servidor SMTP local (Mailpit).
+O FinAlert é uma solução orientada a eventos que cadastra alertas de preço, monitora cotações e envia e-mails quando uma condição é satisfeita. A solução é formada por três serviços, RabbitMQ, bancos exclusivos por serviço e um servidor SMTP local (Mailpit).
 
 ## 2. Fluxo completo
 
@@ -15,11 +15,11 @@ flowchart LR
     Ingestion -->|consulta periódica| Awesome[AwesomeAPI]
     Ingestion -->|market.price.updated| Rabbit
     Rabbit --> Engine
-    Engine --> Postgres[(PostgreSQL)]
+    Engine --> Postgres[(PostgreSQL<br/>alert engine)]
     Engine -->|outbox: alert.triggered| Rabbit
     Rabbit --> Notification[notification-service]
     Rabbit --> Ingestion
-    Notification --> NotificationDb[(PostgreSQL)]
+    Notification --> NotificationDb[(PostgreSQL<br/>notification)]
     Notification --> SMTP[Mailpit / SMTP]
 ```
 
@@ -186,15 +186,25 @@ PostgreSQL de notificações:
 
 - `tb_processed_notifications`.
 
+Os dois bancos PostgreSQL são executados em instâncias e volumes distintos no ambiente local. Cada serviço possui URL, usuário, senha, Flyway e ciclo de vida próprios. O Compose raiz apenas os orquestra para o teste integrado.
+
 O histórico de todas as cotações não é persistido: não é necessário para avaliar o preço atual e aumentaria armazenamento e complexidade operacional. Pode ser introduzido futuramente como uma projeção independente, sem alterar os contratos existentes.
 
 ## 7. Execução local
 
-Pré-requisitos: Java 21 e Docker Compose.
+Pré-requisitos: Git Bash, Java 21 e Docker Compose disponível no WSL.
 
-```powershell
-$env:JAVA_HOME = '<caminho-do-jdk-21>'
-.\gradlew.bat clean build
+O roteiro reproduzível com publicação de eventos, validação do e-mail e teste de idempotência está em [Teste ponta a ponta do FinAlert](testing-end-to-end-flow.md).
+
+```bash
+export JAVA_HOME='<caminho-do-jdk-21-no-formato-do-git-bash>'
+export PATH="$JAVA_HOME/bin:$PATH"
+
+docker() {
+  wsl.exe docker "$@"
+}
+
+./gradlew clean build
 docker compose -f compose.yaml up --build
 ```
 

@@ -1,0 +1,19 @@
+spring:
+  config:
+    import: "optional:file:${NOTIFICATION_ENV_FILE:./.env/notification-service.local.env}[.properties]"
+  datasource:
+    url: ${NOTIFICATION_DB_URL:jdbc:postgresql://localhost:5433/finalert_notification}
+    username: ${NOTIFICATION_DB_USERNAME:finalert_notification}
+    password: ${NOTIFICATION_DB_PASSWORD:finalert-local}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:finalert}
+    password: ${RABBITMQ_PASSWORD:finalert-local}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+
+logging:
+  level:
+    org.flywaydb: DEBUG
