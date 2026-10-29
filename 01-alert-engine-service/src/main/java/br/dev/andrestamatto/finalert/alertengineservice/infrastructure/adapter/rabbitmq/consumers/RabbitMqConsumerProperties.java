@@ -9,6 +9,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("finalert.rabbitmq.consumers")
 public record RabbitMqConsumerProperties(
+    @Valid @NotNull EventProperties marketPriceUpdated,
     @Valid @NotNull EventProperties marketCatalogUpdated
 ) {
     public record EventProperties(

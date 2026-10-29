@@ -1,6 +1,6 @@
 package br.dev.andrestamatto.finalert.alertengineservice.application.service;
 
-import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.MarketCatalogUpdatedUseCase;
+import br.dev.andrestamatto.finalert.alertengineservice.application.usecase.MarketCatalogUpdatedUseCase;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.MarketCatalogRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.domain.MarketCatalog;
 import lombok.extern.slf4j.Slf4j;

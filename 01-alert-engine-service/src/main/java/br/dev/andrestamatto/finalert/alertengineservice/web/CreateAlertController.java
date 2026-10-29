@@ -1,7 +1,6 @@
 package br.dev.andrestamatto.finalert.alertengineservice.web;
 
-import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.CreateAlertUseCase;
-import br.dev.andrestamatto.finalert.alertengineservice.application.service.CreateAlertService;
+import br.dev.andrestamatto.finalert.alertengineservice.application.usecase.CreateAlertUseCase;
 import br.dev.andrestamatto.finalert.alertengineservice.web.request.CreateAlertRequest;
 import br.dev.andrestamatto.finalert.alertengineservice.web.response.CreateAlertResponse;
 import jakarta.annotation.Nonnull;
@@ -21,7 +20,7 @@ public class CreateAlertController {
     private final CreateAlertUseCase createAlertUseCase;
     private final CreateAlertWebMapper createAlertWebMapper;
 
-    public CreateAlertController(CreateAlertService createAlertUseCase, CreateAlertWebMapper createAlertWebMapper) {
+    public CreateAlertController(CreateAlertUseCase createAlertUseCase, CreateAlertWebMapper createAlertWebMapper) {
         this.createAlertUseCase = createAlertUseCase;
         this.createAlertWebMapper = createAlertWebMapper;
     }

@@ -9,7 +9,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("finalert.rabbitmq.publishers")
 public record RabbitMqPublisherProperties(
-    @Valid @NotNull EventProperties alertMonitoringRequested
+    @Valid @NotNull EventProperties alertMonitoringRequested,
+    @Valid @NotNull EventProperties alertTriggered
 ) {
     public record EventProperties(
             @NotBlank

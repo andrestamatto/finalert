@@ -1,6 +1,6 @@
 package br.dev.andrestamatto.finalert.alertengineservice.infrastructure.adapter.rabbitmq.consumers;
 
-import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.MarketCatalogUpdatedUseCase;
+import br.dev.andrestamatto.finalert.alertengineservice.application.usecase.MarketCatalogUpdatedUseCase;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.messaging.MarketCatalogUpdatedMessage;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.messaging.MarketCatalogUpdatedConsumer;
 import jakarta.validation.Valid;
@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-public class RabbitMqMarketCatalogUpdatedEvent implements MarketCatalogUpdatedConsumer {
+public class RabbitMqMarketCatalogUpdatedConsumer implements MarketCatalogUpdatedConsumer {
 
     private final MarketCatalogUpdatedUseCase marketCatalogUpdatedUseCase;
 
-    public RabbitMqMarketCatalogUpdatedEvent(MarketCatalogUpdatedUseCase marketCatalogUpdatedUseCase) {
+    public RabbitMqMarketCatalogUpdatedConsumer(MarketCatalogUpdatedUseCase marketCatalogUpdatedUseCase) {
         this.marketCatalogUpdatedUseCase = marketCatalogUpdatedUseCase;
     }
 

@@ -11,6 +11,15 @@ spring:
     connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:5s}
     publisher-confirm-type: correlated
     publisher-returns: true
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: ${RABBITMQ_CONSUMER_MAX_ATTEMPTS:5}
+          initial-interval: 1s
+          multiplier: 2.0
+          max-interval: 30s
     template:
       mandatory: true
       retry:
@@ -19,6 +28,10 @@ spring:
 finalert:
   rabbitmq:
     consumers:
+      market-price-updated:
+        queue-name: ${MARKET_PRICE_UPDATED_QUEUE:market-price-updated}
+        exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
+        routing-key: ${MARKET_PRICE_UPDATED_ROUTING_KEY:market.price.updated}
       market-catalog-updated:
         queue-name: ${MARKET_CATALOG_UPDATED_QUEUE:market-catalog-updated}
         exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}
@@ -27,6 +40,9 @@ finalert:
       alert-monitoring-requested:
         exchange-name: ${ALERT_MONITORING_REQUESTED_EXCHANGE:alert.events}
         routing-key: ${ALERT_MONITORING_REQUESTED_ROUTING_KEY:alert.monitoring.requested}
+      alert-triggered:
+        exchange-name: ${ALERT_TRIGGERED_EXCHANGE:alert.events}
+        routing-key: ${ALERT_TRIGGERED_ROUTING_KEY:alert.triggered}
   outbox:
     worker-fixed-delay: ${OUTBOX_WORKER_FIXED_DELAY:1s}
     batch-size: ${OUTBOX_BATCH_SIZE:20}
