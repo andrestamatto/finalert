@@ -27,14 +27,12 @@ POST /alerts/{symbol}
 
 Execute todos os comandos a partir da raiz do repositório.
 
-### Encaminhar Docker ao WSL
+### Importe as funções de teste
 
-Crie uma função para que os comandos `docker` desta sessão sejam executados dentro do WSL:
+O dotfile `.finalert-test-functions.sh` contém a função que encaminha o Docker ao WSL e as funções auxiliares usadas neste roteiro. Importe-o uma vez em cada nova sessão do Git Bash:
 
 ```bash
-docker() {
-  wsl.exe docker "$@"
-}
+source ./.finalert-test-functions.sh
 ```
 
 O WSL herda o diretório atual do Git Bash. Confirme o acesso ao daemon e valide o Compose:
@@ -45,7 +43,7 @@ docker compose version
 docker compose -f compose.yaml config --quiet
 ```
 
-Se o Docker já estiver diretamente disponível no Git Bash, não é necessário declarar a função.
+Se o Docker já estiver diretamente disponível no Git Bash, remova ou sobrescreva a função `docker` após importar o dotfile.
 
 ### Configuração local
 
@@ -127,64 +125,48 @@ docker compose -f compose.yaml logs --tail=200 \
   alert-engine market-data-ingestion notification
 ```
 
-## 5. Prepare as funções auxiliares
+## 5. Funções auxiliares disponíveis
 
-O Git Bash não inclui `uuidgen` em todas as instalações. Esta função produz identificadores aceitos por `UUID.fromString` usando o OpenSSL:
+O dotfile importado na etapa 2 disponibiliza:
+
+- `docker`: encaminha os comandos Docker ao WSL;
+- `new_uuid`: produz identificadores aceitos por `UUID.fromString` usando o OpenSSL;
+- `mail_total`: extrai o total de mensagens retornado pelo Mailpit sem exigir `jq`;
+- `finalert_publish_catalog`: publica o catálogo de teste;
+- `finalert_create_alert`: cria o alerta de teste;
+- `finalert_publish_market_price`: publica uma cotação que satisfaz o alerta;
+- `finalert_list_emails`: lista os e-mails capturados;
+- `finalert_test_idempotency`: republica a mesma cotação e valida a idempotência;
+- `finalert_check_dlqs`: confirma que as dead-letter queues estão vazias;
+- `finalert_run_e2e`: executa, em ordem, todas as funções das etapas 6 a 11 e confirma que um novo e-mail foi entregue.
+
+Confirme que as funções estão disponíveis na sessão:
 
 ```bash
-new_uuid() {
-  local hex
-  hex="$(openssl rand -hex 16)"
-  printf '%s-%s-%s-%s-%s\n' \
-    "${hex:0:8}" \
-    "${hex:8:4}" \
-    "${hex:12:4}" \
-    "${hex:16:4}" \
-    "${hex:20:12}"
-}
+type docker new_uuid mail_total \
+  finalert_publish_catalog finalert_create_alert \
+  finalert_publish_market_price finalert_list_emails \
+  finalert_test_idempotency finalert_check_dlqs finalert_run_e2e
 ```
 
-Esta função extrai o total de mensagens retornado pelo Mailpit sem exigir `jq`:
+Para executar diretamente o fluxo completo das etapas 6 a 11, use:
 
 ```bash
-mail_total() {
-  curl -sS http://localhost:8025/api/v1/messages \
-    | tr -d '\r\n' \
-    | sed -nE 's/.*"total"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p'
-}
+finalert_run_e2e
 ```
 
 ## 6. Publique um catálogo conhecido
 
-O alert engine só aceita símbolos presentes em sua projeção do catálogo. Monte um evento contendo `USD-BRL`:
+O alert engine só aceita símbolos presentes em sua projeção do catálogo. Publique um evento contendo `USD-BRL`:
 
 ```bash
-catalog_event_id="$(new_uuid)"
-catalog_updated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-catalog_version="$(date +%s)000"
-
-catalog_event="$(printf \
-  '{"eventId":"%s","catalog":{"USD-BRL":"USD/BRL"},"updatedAt":"%s","version":%s}' \
-  "$catalog_event_id" \
-  "$catalog_updated_at" \
-  "$catalog_version")"
+finalert_publish_catalog
 ```
 
-O HTTP API do RabbitMQ recebe o evento interno em Base64, evitando escapes JSON aninhados:
+Opcionalmente, informe o símbolo interno e o símbolo do provedor:
 
 ```bash
-catalog_payload="$(printf '%s' "$catalog_event" | base64 | tr -d '\r\n')"
-
-catalog_publication="$(printf \
-  '{"properties":{"content_type":"application/json"},"routing_key":"market.catalog.updated","payload":"%s","payload_encoding":"base64"}' \
-  "$catalog_payload")"
-
-curl -sS \
-  -u 'finalert:finalert-local' \
-  -H 'Content-Type: application/json' \
-  -X POST \
-  --data-raw "$catalog_publication" \
-  'http://localhost:15672/api/exchanges/%2F/market.events/publish'
+finalert_publish_catalog 'USD-BRL' 'USD/BRL'
 ```
 
 Resposta esperada:
@@ -193,28 +175,20 @@ Resposta esperada:
 {"routed":true}
 ```
 
-Aguarde o consumo:
-
-```bash
-sleep 2
-```
-
-Se a resposta contiver `"routed":false`, confirme que o `alert-engine` iniciou e declarou a fila `market-catalog-updated`.
+A função aguarda dois segundos pelo consumo. Se a publicação não retornar `"routed":true`, ela termina com status diferente de zero.
 
 ## 7. Crie um alerta
 
 Use um preço alto para impedir que uma cotação real da AwesomeAPI dispare o alerta antes da publicação manual:
 
 ```bash
-idempotency_key="e2e-$(new_uuid)"
-alert_request='{"userEmail":"user@example.com","targetPrice":999.00,"triggerOperator":"GTE"}'
+finalert_create_alert
+```
 
-curl -i -sS \
-  -H 'Content-Type: application/json' \
-  -H "Idempotency-Key: $idempotency_key" \
-  -X POST \
-  --data-raw "$alert_request" \
-  'http://localhost:8080/alerts/USD-BRL'
+Os parâmetros opcionais são e-mail, símbolo, preço-alvo e operador:
+
+```bash
+finalert_create_alert 'user@example.com' 'USD-BRL' '999.00' 'GTE'
 ```
 
 Resultado esperado:
@@ -223,7 +197,7 @@ Resultado esperado:
 HTTP/1.1 201 Created
 ```
 
-O corpo contém o `alertId`. Após alguns segundos, o `AlertMonitoringRequestedEvent` deve ter sido publicado pela outbox e consumido pelo serviço de ingestão.
+O corpo contém o `alertId`. A função aguarda dois segundos para que o `AlertMonitoringRequestedEvent` seja publicado pela outbox e consumido pelo serviço de ingestão.
 
 Confira os logs:
 
@@ -237,26 +211,13 @@ docker compose -f compose.yaml logs --tail=100 \
 O preço `1000.00` satisfaz `GTE 999.00`:
 
 ```bash
-price_event_id="$(new_uuid)"
-quoted_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+finalert_publish_market_price
+```
 
-price_event="$(printf \
-  '{"eventId":"%s","symbol":"USD-BRL","currentPrice":1000.00,"occurredAt":"%s"}' \
-  "$price_event_id" \
-  "$quoted_at")"
+Opcionalmente, informe o símbolo e o preço atual:
 
-price_payload="$(printf '%s' "$price_event" | base64 | tr -d '\r\n')"
-
-price_publication="$(printf \
-  '{"properties":{"content_type":"application/json"},"routing_key":"market.price.updated","payload":"%s","payload_encoding":"base64"}' \
-  "$price_payload")"
-
-curl -sS \
-  -u 'finalert:finalert-local' \
-  -H 'Content-Type: application/json' \
-  -X POST \
-  --data-raw "$price_publication" \
-  'http://localhost:15672/api/exchanges/%2F/market.events/publish'
+```bash
+finalert_publish_market_price 'USD-BRL' '1000.00'
 ```
 
 Resposta esperada:
@@ -265,26 +226,17 @@ Resposta esperada:
 {"routed":true}
 ```
 
-Aguarde a outbox e os dois consumidores de `AlertTriggeredEvent`:
-
-```bash
-sleep 5
-```
+A função aguarda cinco segundos pela outbox e pelos dois consumidores de `AlertTriggeredEvent`.
 
 ## 9. Verifique o e-mail
 
 Liste as mensagens capturadas pelo Mailpit:
 
 ```bash
-curl -sS http://localhost:8025/api/v1/messages
+finalert_list_emails
 ```
 
-Se `jq` estiver instalado, exiba apenas os campos principais:
-
-```bash
-curl -sS http://localhost:8025/api/v1/messages \
-  | jq '.messages[] | {Subject, From, To, Created}'
-```
+Se `jq` estiver instalado, a função exibe apenas os campos principais; caso contrário, mostra a resposta completa do Mailpit.
 
 Deve existir uma mensagem para `user@example.com` com assunto semelhante a:
 
@@ -300,38 +252,10 @@ http://localhost:8025
 
 ## 10. Teste a idempotência
 
-Guarde a quantidade atual de mensagens:
+Republique exatamente o mesmo `MarketPriceUpdatedEvent` criado pela função da etapa 8 e compare a quantidade de e-mails:
 
 ```bash
-total_before_replay="$(mail_total)"
-```
-
-Publique exatamente o mesmo `MarketPriceUpdatedEvent` novamente:
-
-```bash
-curl -sS \
-  -u 'finalert:finalert-local' \
-  -H 'Content-Type: application/json' \
-  -X POST \
-  --data-raw "$price_publication" \
-  'http://localhost:15672/api/exchanges/%2F/market.events/publish'
-
-sleep 5
-```
-
-Compare o total:
-
-```bash
-total_after_replay="$(mail_total)"
-
-printf 'Antes do replay: %s\n' "$total_before_replay"
-printf 'Depois do replay: %s\n' "$total_after_replay"
-
-if [[ "$total_before_replay" == "$total_after_replay" ]]; then
-  echo 'Idempotente: true'
-else
-  echo 'Idempotente: false'
-fi
+finalert_test_idempotency
 ```
 
 Resultado esperado:
@@ -347,28 +271,10 @@ Também é possível repetir o `POST /alerts/USD-BRL` com a mesma `Idempotency-K
 ## 11. Verifique as dead-letter queues
 
 ```bash
-queues=(
-  'market-price-updated.dlq'
-  'market-catalog-updated.dlq'
-  'market-price-alert.dlq'
-  'alert-triggered-monitoring-release.dlq'
-  'alert-triggered-notification.dlq'
-)
-
-for queue in "${queues[@]}"; do
-  messages="$(
-    curl -sS \
-      -u 'finalert:finalert-local' \
-      "http://localhost:15672/api/queues/%2F/$queue" \
-      | tr -d '\r\n' \
-      | sed -nE 's/.*"messages"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p'
-  )"
-
-  printf '%-45s %s\n' "$queue" "${messages:-indisponível}"
-done
+finalert_check_dlqs
 ```
 
-Todas as filas devem apresentar `0`.
+Todas as filas devem apresentar `0`. A função termina com status diferente de zero caso alguma fila esteja indisponível ou contenha mensagens.
 
 ## 12. Teste opcional com a AwesomeAPI
 
@@ -396,6 +302,25 @@ curl -sS http://localhost:8025/api/v1/messages
 Esse teste depende da conectividade e disponibilidade da AwesomeAPI.
 
 ## 13. Diagnóstico
+
+### O Compose informa `dependency alert-engine-postgres failed to start`
+
+Na primeira criação do volume, o PostgreSQL pode levar mais de um minuto para inicializar no WSL. O health check possui uma janela inicial de 90 segundos para acomodar esse processo.
+
+Confira se o banco terminou a inicialização:
+
+```bash
+docker compose -f compose.yaml ps alert-engine-postgres
+docker logs finalert-alert-engine-postgres --tail 300
+```
+
+Se o container já estiver `healthy`, execute novamente o comando de subida para iniciar os serviços que ficaram no estado `Created` quando o Compose interrompeu a primeira tentativa:
+
+```bash
+docker compose -f compose.yaml up -d
+```
+
+Não remova o volume para esse caso: a segunda execução reutiliza o banco que acabou de ser inicializado.
 
 ### MongoDB não inicia
 
