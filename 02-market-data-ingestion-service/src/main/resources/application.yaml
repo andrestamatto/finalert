@@ -7,6 +7,15 @@ spring:
   rabbitmq:
     publisher-confirm-type: correlated
     publisher-returns: true
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: ${RABBITMQ_CONSUMER_MAX_ATTEMPTS:5}
+          initial-interval: 1s
+          multiplier: 2.0
+          max-interval: 30s
     template:
       mandatory: true
       retry:
@@ -30,6 +39,10 @@ finalert:
         queue-name: ${MARKET_PRICE_ALERT_QUEUE:market-price-alert}
         exchange-name: ${ALERT_EVENTS_EXCHANGE:alert.events}
         routing-key: ${ALERT_MONITORING_REQUESTED_ROUTING_KEY:alert.monitoring.requested}
+      alert-triggered:
+        queue-name: ${ALERT_TRIGGERED_RELEASE_QUEUE:alert-triggered-monitoring-release}
+        exchange-name: ${ALERT_EVENTS_EXCHANGE:alert.events}
+        routing-key: ${ALERT_TRIGGERED_ROUTING_KEY:alert.triggered}
     publishers:
       market-price-updated:
         exchange-name: ${MARKET_EVENTS_EXCHANGE:market.events}

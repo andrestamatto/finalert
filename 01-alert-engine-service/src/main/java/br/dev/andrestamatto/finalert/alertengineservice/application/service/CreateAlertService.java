@@ -4,7 +4,7 @@ import br.dev.andrestamatto.finalert.alertengineservice.application.event.AlertM
 import br.dev.andrestamatto.finalert.alertengineservice.application.exceptions.IdempotencyConflictException;
 import br.dev.andrestamatto.finalert.alertengineservice.application.exceptions.MarketCatalogDoesNotContainsSymbolException;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.commands.CreateAlertCommand;
-import br.dev.andrestamatto.finalert.alertengineservice.application.ports.in.CreateAlertUseCase;
+import br.dev.andrestamatto.finalert.alertengineservice.application.usecase.CreateAlertUseCase;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.AlertRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.repository.CreateAlertRequestRepository;
 import br.dev.andrestamatto.finalert.alertengineservice.application.ports.out.messaging.AlertMonitoringRequestedEventEnqueuer;

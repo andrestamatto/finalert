@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.alertengineservice.application.ports.in;
+package br.dev.andrestamatto.finalert.alertengineservice.application.usecase;
 
 import br.dev.andrestamatto.finalert.alertengineservice.domain.MarketCatalog;
 

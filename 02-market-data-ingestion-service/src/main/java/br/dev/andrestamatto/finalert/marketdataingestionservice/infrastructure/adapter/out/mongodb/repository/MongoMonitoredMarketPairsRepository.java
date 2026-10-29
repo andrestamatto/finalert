@@ -6,6 +6,7 @@ import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.a
 import org.springframework.stereotype.Repository;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
@@ -20,6 +21,11 @@ public class MongoMonitoredMarketPairsRepository implements MonitoredMarketPairs
     @Override
     public void register(MarketPriceAlert alert) {
         repository.save(MarketPriceAlertDocument.fromDomain(alert));
+    }
+
+    @Override
+    public void unregister(UUID alertId) {
+        repository.deleteById(alertId);
     }
 
     @Override
