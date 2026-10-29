@@ -29,7 +29,7 @@ services:
     ports:
       - "127.0.0.1:8081:8080"
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-finalert}:${MONGO_INITDB_ROOT_PASSWORD:-finalert-local}@finalert-mongodb:27017/${MARKET_DATA_MONGODB_DATABASE:-finalert_market_data}?authSource=admin&uuidRepresentation=standard&replicaSet=rs0&directConnection=true
+      SPRING_MONGODB_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-finalert}:${MONGO_INITDB_ROOT_PASSWORD:-finalert-local}@finalert-mongodb:27017/${MARKET_DATA_MONGODB_DATABASE:-finalert_market_data}?authSource=admin&uuidRepresentation=standard&replicaSet=rs0&directConnection=true
       SPRING_RABBITMQ_HOST: finalert-rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-finalert}
@@ -126,7 +126,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 90s
 
   notification-postgres:
     image: postgres:17.11
@@ -146,7 +146,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 20s
+      start_period: 90s
 
   rabbitmq:
     image: rabbitmq:4.2.9-management
