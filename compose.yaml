@@ -8,15 +8,15 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://finalert-postgres:5432/finalert_alert_engine
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-finalert}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-finalert-local}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://finalert-alert-engine-postgres:5432/${ALERT_ENGINE_DB_NAME:-finalert_alert_engine}
+      SPRING_DATASOURCE_USERNAME: ${ALERT_ENGINE_DB_USERNAME:-finalert_alert_engine}
+      SPRING_DATASOURCE_PASSWORD: ${ALERT_ENGINE_DB_PASSWORD:-finalert-local}
       SPRING_RABBITMQ_HOST: finalert-rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-finalert}
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS:-finalert-local}
     depends_on:
-      postgres:
+      alert-engine-postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -48,9 +48,9 @@ services:
     ports:
       - "127.0.0.1:8082:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://finalert-postgres:5432/finalert_notification
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-finalert}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-finalert-local}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://finalert-notification-postgres:5432/${NOTIFICATION_DB_NAME:-finalert_notification}
+      SPRING_DATASOURCE_USERNAME: ${NOTIFICATION_DB_USERNAME:-finalert_notification}
+      SPRING_DATASOURCE_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-finalert-local}
       SPRING_RABBITMQ_HOST: finalert-rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER:-finalert}
@@ -59,7 +59,7 @@ services:
       SPRING_MAIL_PORT: 1025
       NOTIFICATION_FROM_ADDRESS: ${NOTIFICATION_FROM_ADDRESS:-alerts@finalert.local}
     depends_on:
-      postgres:
+      notification-postgres:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
@@ -108,20 +108,39 @@ services:
       retries: 10
       start_period: 30s
 
-  postgres:
+  alert-engine-postgres:
     image: postgres:17.11
-    container_name: finalert-postgres
-    hostname: finalert-postgres
+    container_name: finalert-alert-engine-postgres
+    hostname: finalert-alert-engine-postgres
     restart: unless-stopped
     ports:
       - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-postgres}
-      POSTGRES_USER: ${POSTGRES_USER:-finalert}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finalert-local}
+      POSTGRES_DB: ${ALERT_ENGINE_DB_NAME:-finalert_alert_engine}
+      POSTGRES_USER: ${ALERT_ENGINE_DB_USERNAME:-finalert_alert_engine}
+      POSTGRES_PASSWORD: ${ALERT_ENGINE_DB_PASSWORD:-finalert-local}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/init:/docker-entrypoint-initdb.d:ro
+      - alert_engine_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  notification-postgres:
+    image: postgres:17.11
+    container_name: finalert-notification-postgres
+    hostname: finalert-notification-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: ${NOTIFICATION_DB_NAME:-finalert_notification}
+      POSTGRES_USER: ${NOTIFICATION_DB_USERNAME:-finalert_notification}
+      POSTGRES_PASSWORD: ${NOTIFICATION_DB_PASSWORD:-finalert-local}
+    volumes:
+      - notification_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -151,5 +170,6 @@ services:
 
 volumes:
   mongodb_data:
-  postgres_data:
+  alert_engine_postgres_data:
+  notification_postgres_data:
   rabbitmq_data:
