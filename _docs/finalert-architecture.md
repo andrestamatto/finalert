@@ -192,13 +192,19 @@ O histórico de todas as cotações não é persistido: não é necessário para
 
 ## 7. Execução local
 
-Pré-requisitos: Java 21 e Docker Compose.
+Pré-requisitos: Git Bash, Java 21 e Docker Compose disponível no WSL.
 
 O roteiro reproduzível com publicação de eventos, validação do e-mail e teste de idempotência está em [Teste ponta a ponta do FinAlert](testing-end-to-end-flow.md).
 
-```powershell
-$env:JAVA_HOME = '<caminho-do-jdk-21>'
-.\gradlew.bat clean build
+```bash
+export JAVA_HOME='<caminho-do-jdk-21-no-formato-do-git-bash>'
+export PATH="$JAVA_HOME/bin:$PATH"
+
+docker() {
+  wsl.exe docker "$@"
+}
+
+./gradlew clean build
 docker compose -f compose.yaml up --build
 ```
 
