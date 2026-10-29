@@ -397,6 +397,25 @@ Esse teste depende da conectividade e disponibilidade da AwesomeAPI.
 
 ## 13. Diagnóstico
 
+### O Compose informa `dependency alert-engine-postgres failed to start`
+
+Na primeira criação do volume, o PostgreSQL pode levar mais de um minuto para inicializar no WSL. O health check possui uma janela inicial de 90 segundos para acomodar esse processo.
+
+Confira se o banco terminou a inicialização:
+
+```bash
+docker compose -f compose.yaml ps alert-engine-postgres
+docker logs finalert-alert-engine-postgres --tail 300
+```
+
+Se o container já estiver `healthy`, execute novamente o comando de subida para iniciar os serviços que ficaram no estado `Created` quando o Compose interrompeu a primeira tentativa:
+
+```bash
+docker compose -f compose.yaml up -d
+```
+
+Não remova o volume para esse caso: a segunda execução reutiliza o banco que acabou de ser inicializado.
+
 ### MongoDB não inicia
 
 ```bash
