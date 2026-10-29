@@ -94,7 +94,8 @@ services:
       - /bin/bash
       - -ec
       - |
-        printf '%s' "$$MONGO_REPLICA_SET_KEY" > /tmp/mongodb-keyfile
+        rm -f /tmp/mongodb-keyfile
+        printf '%s' "$$MONGO_REPLICA_SET_KEY" | base64 | tr -d '\n' > /tmp/mongodb-keyfile
         chmod 400 /tmp/mongodb-keyfile
         chown mongodb:mongodb /tmp/mongodb-keyfile
         exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /tmp/mongodb-keyfile --bind_ip_all
