@@ -71,10 +71,25 @@ public class RabbitMQConfig implements RabbitListenerConfigurer {
 
     @Bean
     public Queue marketPriceAlertQueue() {
+        return durableQueueWithDeadLetter(rabbitMqConsumersProperties.marketPriceAlert().queueName());
+    }
+
+    @Bean
+    public Queue alertTriggeredQueue() {
+        return durableQueueWithDeadLetter(rabbitMqConsumersProperties.alertTriggered().queueName());
+    }
+
+    @Bean
+    public Queue marketPriceAlertDeadLetterQueue() {
         return QueueBuilder.durable(
-                rabbitMqConsumersProperties
-                        .marketPriceAlert()
-                        .queueName()
+                rabbitMqConsumersProperties.marketPriceAlert().queueName() + ".dlq"
+        ).build();
+    }
+
+    @Bean
+    public Queue alertTriggeredDeadLetterQueue() {
+        return QueueBuilder.durable(
+                rabbitMqConsumersProperties.alertTriggered().queueName() + ".dlq"
         ).build();
     }
 
@@ -93,10 +108,28 @@ public class RabbitMQConfig implements RabbitListenerConfigurer {
                 );
     }
 
+    @Bean
+    public Binding alertTriggeredBinding(
+            @Qualifier("alertTriggeredQueue") Queue alertTriggeredQueue,
+            @Qualifier("alertMonitoringRequestedEventsExchange") TopicExchange alertEventsExchange
+    ) {
+        return BindingBuilder
+                .bind(alertTriggeredQueue)
+                .to(alertEventsExchange)
+                .with(rabbitMqConsumersProperties.alertTriggered().routingKey());
+    }
+
 
     @Bean
     public MessageConverter messageConverter(ObjectMapper objectMapper) {
         return new JacksonJsonMessageConverter((JsonMapper) objectMapper);
+    }
+
+    private Queue durableQueueWithDeadLetter(String queueName) {
+        return QueueBuilder.durable(queueName)
+                .deadLetterExchange("")
+                .deadLetterRoutingKey(queueName + ".dlq")
+                .build();
     }
 
 }

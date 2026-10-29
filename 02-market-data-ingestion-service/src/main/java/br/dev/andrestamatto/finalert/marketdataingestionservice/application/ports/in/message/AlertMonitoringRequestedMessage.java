@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.marketdataingestionservice.application.event;
+package br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.in.message;
 
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.MarketPriceAlert;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.domain.TriggerOperator;
@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
-public record AlertMonitoringRequestedEvent(
+public record AlertMonitoringRequestedMessage(
         @NotBlank
         String eventId,
 
@@ -28,7 +28,7 @@ public record AlertMonitoringRequestedEvent(
         @NotNull
         Instant occurredAt
 ) {
-    public static MarketPriceAlert toDomain(AlertMonitoringRequestedEvent event) {
+    public static MarketPriceAlert toDomain(AlertMonitoringRequestedMessage event) {
         return new MarketPriceAlert(
             UUID.fromString(event.alertId()),
             event.symbol(),
