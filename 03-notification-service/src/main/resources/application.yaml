@@ -1,3 +1,25 @@
 spring:
   application:
     name: finalert.notification-service
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  rabbitmq:
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: ${RABBITMQ_CONSUMER_MAX_ATTEMPTS:5}
+          initial-interval: 1s
+          multiplier: 2.0
+          max-interval: 30s
+
+finalert:
+  rabbitmq:
+    alert-triggered:
+      queue-name: ${ALERT_TRIGGERED_NOTIFICATION_QUEUE:alert-triggered-notification}
+      exchange-name: ${ALERT_EVENTS_EXCHANGE:alert.events}
+      routing-key: ${ALERT_TRIGGERED_ROUTING_KEY:alert.triggered}
+  notification:
+    from-address: ${NOTIFICATION_FROM_ADDRESS:alerts@finalert.local}

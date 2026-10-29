@@ -1,4 +1,4 @@
-package br.dev.andrestamatto.finalert.notification_service;
+package br.dev.andrestamatto.finalert.notificationservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
