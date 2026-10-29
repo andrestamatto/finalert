@@ -27,14 +27,12 @@ POST /alerts/{symbol}
 
 Execute todos os comandos a partir da raiz do repositório.
 
-### Encaminhar Docker ao WSL
+### Importe as funções de teste
 
-Crie uma função para que os comandos `docker` desta sessão sejam executados dentro do WSL:
+O dotfile `.finalert-test-functions.sh` contém a função que encaminha o Docker ao WSL e as funções auxiliares usadas neste roteiro. Importe-o uma vez em cada nova sessão do Git Bash:
 
 ```bash
-docker() {
-  wsl.exe docker "$@"
-}
+source ./.finalert-test-functions.sh
 ```
 
 O WSL herda o diretório atual do Git Bash. Confirme o acesso ao daemon e valide o Compose:
@@ -45,7 +43,7 @@ docker compose version
 docker compose -f compose.yaml config --quiet
 ```
 
-Se o Docker já estiver diretamente disponível no Git Bash, não é necessário declarar a função.
+Se o Docker já estiver diretamente disponível no Git Bash, remova ou sobrescreva a função `docker` após importar o dotfile.
 
 ### Configuração local
 
@@ -127,31 +125,18 @@ docker compose -f compose.yaml logs --tail=200 \
   alert-engine market-data-ingestion notification
 ```
 
-## 5. Prepare as funções auxiliares
+## 5. Funções auxiliares disponíveis
 
-O Git Bash não inclui `uuidgen` em todas as instalações. Esta função produz identificadores aceitos por `UUID.fromString` usando o OpenSSL:
+O dotfile importado na etapa 2 disponibiliza:
 
-```bash
-new_uuid() {
-  local hex
-  hex="$(openssl rand -hex 16)"
-  printf '%s-%s-%s-%s-%s\n' \
-    "${hex:0:8}" \
-    "${hex:8:4}" \
-    "${hex:12:4}" \
-    "${hex:16:4}" \
-    "${hex:20:12}"
-}
-```
+- `docker`: encaminha os comandos Docker ao WSL;
+- `new_uuid`: produz identificadores aceitos por `UUID.fromString` usando o OpenSSL;
+- `mail_total`: extrai o total de mensagens retornado pelo Mailpit sem exigir `jq`.
 
-Esta função extrai o total de mensagens retornado pelo Mailpit sem exigir `jq`:
+Confirme que as funções estão disponíveis na sessão:
 
 ```bash
-mail_total() {
-  curl -sS http://localhost:8025/api/v1/messages \
-    | tr -d '\r\n' \
-    | sed -nE 's/.*"total"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p'
-}
+type docker new_uuid mail_total
 ```
 
 ## 6. Publique um catálogo conhecido
