@@ -1,0 +1,77 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+discovery.docker "finalert" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "finalert" {
+  targets = discovery.docker.finalert.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "alert-engine|market-data-ingestion|notification|mailpit|mongodb|alert-engine-postgres|notification-postgres|rabbitmq"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service_name"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    replacement   = "$1"
+    target_label  = "container"
+  }
+
+  rule {
+    replacement  = "local"
+    target_label = "environment"
+  }
+}
+
+loki.source.docker "finalert" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.finalert.output
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+otelcol.receiver.otlp "finalert" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces = [otelcol.processor.batch.finalert.input]
+  }
+}
+
+otelcol.processor.batch "finalert" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+
+    tls {
+      insecure = true
+    }
+  }
+}
