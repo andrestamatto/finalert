@@ -138,6 +138,11 @@ O dotfile importado na etapa 2 disponibiliza:
 - `finalert_list_emails`: lista os e-mails capturados;
 - `finalert_test_idempotency`: republica a mesma cotação e valida a idempotência;
 - `finalert_check_dlqs`: confirma que as dead-letter queues estão vazias;
+- `finalert_observability_status`: verifica health das aplicações e do Grafana;
+- `finalert_prometheus_targets`: lista e valida os targets de scrape;
+- `finalert_loki_services`: confirma logs dos três serviços no Loki;
+- `finalert_tempo_traces`: lista traces recentes no Tempo;
+- `finalert_check_observability`: executa todas as verificações de observabilidade;
 - `finalert_run_e2e`: executa, em ordem, todas as funções das etapas 6 a 11 e confirma que um novo e-mail foi entregue.
 
 Confirme que as funções estão disponíveis na sessão:
@@ -146,7 +151,10 @@ Confirme que as funções estão disponíveis na sessão:
 type docker new_uuid mail_total \
   finalert_publish_catalog finalert_create_alert \
   finalert_publish_market_price finalert_list_emails \
-  finalert_test_idempotency finalert_check_dlqs finalert_run_e2e
+  finalert_test_idempotency finalert_check_dlqs finalert_run_e2e \
+  finalert_observability_status finalert_prometheus_targets \
+  finalert_loki_services finalert_tempo_traces \
+  finalert_check_observability
 ```
 
 Para executar diretamente o fluxo completo das etapas 6 a 11, use:
@@ -154,6 +162,8 @@ Para executar diretamente o fluxo completo das etapas 6 a 11, use:
 ```bash
 finalert_run_e2e
 ```
+
+Para executar a solução com Grafana, Prometheus, Loki e Tempo, siga o roteiro [Operação e teste da observabilidade local](testing-observability.md).
 
 ## 6. Publique um catálogo conhecido
 

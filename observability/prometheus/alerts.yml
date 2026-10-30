@@ -1,0 +1,84 @@
+groups:
+  - name: finalert-services
+    rules:
+      - alert: FinAlertServiceUnavailable
+        expr: up{job=~"finalert-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "FinAlert service unavailable"
+          description: "Prometheus has not scraped {{ $labels.job }} successfully for two minutes."
+
+      - alert: FinAlertHttpErrorRateHigh
+        expr: >-
+          sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          /
+          clamp_min(sum by (job) (rate(http_server_requests_seconds_count[5m])), 1)
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High HTTP error rate"
+          description: "More than 5% of HTTP requests to {{ $labels.job }} returned 5xx for five minutes."
+
+  - name: finalert-messaging
+    rules:
+      - alert: FinAlertDeadLetterQueueNotEmpty
+        expr: rabbitmq_queue_messages{queue=~".*\\.dlq"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Dead-letter queue contains messages"
+          description: "Queue {{ $labels.queue }} contains {{ $value }} message(s)."
+
+      - alert: FinAlertQueueWithoutConsumer
+        expr: >-
+          rabbitmq_queue_messages{queue!~".*\\.dlq"} > 0
+          and on (cluster, vhost, queue)
+          rabbitmq_queue_consumers == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Business queue has no consumer"
+          description: "Queue {{ $labels.queue }} contains messages but has no active consumer."
+
+  - name: finalert-business
+    rules:
+      - alert: FinAlertOutboxFailed
+        expr: finalert_outbox_events{status="FAILED"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbox contains failed events"
+          description: "{{ $labels.event_type }} has {{ $value }} failed outbox event(s)."
+
+      - alert: FinAlertOutboxEventTooOld
+        expr: finalert_outbox_oldest_age_seconds{status=~"PENDING|PROCESSING"} > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Outbox event is older than expected"
+          description: "The oldest {{ $labels.event_type }} outbox event is {{ $value }} seconds old."
+
+      - alert: FinAlertNotificationFailure
+        expr: increase(finalert_notification_process_total{outcome="failure"}[5m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Notification delivery failed"
+          description: "At least one notification failed during the last five minutes."
+
+      - alert: FinAlertMarketPriceStale
+        expr: finalert_market_price_last_success_age_seconds > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Market prices are stale"
+          description: "No successful market price refresh has occurred within the expected interval."

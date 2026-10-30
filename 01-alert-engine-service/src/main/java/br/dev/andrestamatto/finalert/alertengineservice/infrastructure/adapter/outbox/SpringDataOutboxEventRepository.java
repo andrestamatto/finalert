@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,4 +21,25 @@ public interface SpringDataOutboxEventRepository extends JpaRepository<OutboxEve
              FOR UPDATE SKIP LOCKED
             """, nativeQuery = true)
     Optional<OutboxEventEntity> lockNextDue(@Param("now") Instant now);
+
+    @Query("""
+            SELECT event.status AS status,
+                   event.eventType AS eventType,
+                   COUNT(event) AS eventCount,
+                   MIN(event.createdAt) AS oldestCreatedAt
+              FROM OutboxEventEntity event
+             GROUP BY event.status, event.eventType
+            """)
+    List<OutboxMetricsSnapshot> readMetricsSnapshot();
+
+    interface OutboxMetricsSnapshot {
+
+        OutboxEventStatus getStatus();
+
+        String getEventType();
+
+        long getEventCount();
+
+        Instant getOldestCreatedAt();
+    }
 }

@@ -41,7 +41,7 @@ class MarketCatalogOutboxIntegrationTest {
 
     @DynamicPropertySource
     static void mongodbProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", MONGODB::getReplicaSetUrl);
+        registry.add("spring.mongodb.uri", MONGODB::getReplicaSetUrl);
     }
 
     @Autowired

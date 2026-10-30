@@ -1,0 +1,131 @@
+services:
+  alert-engine:
+    environment:
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+      MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED: "false"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_LOGS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.version=0.0.1-SNAPSHOT
+      OTEL_SERVICE_NAME: finalert.alert-engine-service
+      OTEL_TRACES_EXPORTER: otlp
+      SPRING_RABBITMQ_LISTENER_SIMPLE_OBSERVATION_ENABLED: "true"
+      SPRING_RABBITMQ_TEMPLATE_OBSERVATION_ENABLED: "true"
+
+  market-data-ingestion:
+    environment:
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus,marketcatalogoutbox
+      MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED: "false"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_LOGS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.version=0.0.1-SNAPSHOT
+      OTEL_SERVICE_NAME: finalert.market-data-ingestion-service
+      OTEL_TRACES_EXPORTER: otlp
+      SPRING_RABBITMQ_LISTENER_SIMPLE_OBSERVATION_ENABLED: "true"
+      SPRING_RABBITMQ_TEMPLATE_OBSERVATION_ENABLED: "true"
+
+  notification:
+    environment:
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+      MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED: "false"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://alloy:4318
+      OTEL_LOGS_EXPORTER: none
+      OTEL_METRICS_EXPORTER: none
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,service.version=0.0.1-SNAPSHOT
+      OTEL_SERVICE_NAME: finalert.notification-service
+      OTEL_TRACES_EXPORTER: otlp
+      SPRING_RABBITMQ_LISTENER_SIMPLE_OBSERVATION_ENABLED: "true"
+      SPRING_RABBITMQ_TEMPLATE_OBSERVATION_ENABLED: "true"
+
+  rabbitmq:
+    volumes:
+      - ./observability/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    container_name: finalert-prometheus
+    hostname: finalert-prometheus
+    profiles: [observability]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+
+  loki:
+    image: grafana/loki:3.7.9
+    container_name: finalert-loki
+    hostname: finalert-loki
+    profiles: [observability]
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/loki.yaml
+    volumes:
+      - ./observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+
+  tempo:
+    image: grafana/tempo:3.1.1
+    container_name: finalert-tempo
+    hostname: finalert-tempo
+    profiles: [observability]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/tempo/tempo.yaml
+    volumes:
+      - ./observability/tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+
+  alloy:
+    image: grafana/alloy:v1.21.3
+    container_name: finalert-alloy
+    hostname: finalert-alloy
+    profiles: [observability]
+    restart: unless-stopped
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy_data:/var/lib/alloy/data
+
+  grafana:
+    image: grafana/grafana:13.3.0
+    container_name: finalert-grafana
+    hostname: finalert-grafana
+    profiles: [observability]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-finalert-local}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+
+volumes:
+  alloy_data:
+  grafana_data:
+  loki_data:
+  prometheus_data:
+  tempo_data:

@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: finalert-alert-engine
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [alert-engine:8080]
+
+  - job_name: finalert-market-data-ingestion
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [market-data-ingestion:8080]
+
+  - job_name: finalert-notification
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: [notification:8080]
+
+  - job_name: rabbitmq
+    static_configs:
+      - targets: [rabbitmq:15692]
+
+  - job_name: observability
+    static_configs:
+      - targets:
+          - alloy:12345
+          - grafana:3000
+          - loki:3100
+          - prometheus:9090
+          - tempo:3200

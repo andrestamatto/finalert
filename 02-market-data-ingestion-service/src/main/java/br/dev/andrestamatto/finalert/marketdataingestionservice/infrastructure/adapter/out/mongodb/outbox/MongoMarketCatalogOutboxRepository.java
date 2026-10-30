@@ -187,7 +187,9 @@ public class MongoMarketCatalogOutboxRepository implements MarketCatalogOutboxRe
                 count(OutboxStatus.PENDING),
                 count(OutboxStatus.PROCESSING),
                 count(OutboxStatus.PUBLISHED),
-                count(OutboxStatus.FAILED)
+                count(OutboxStatus.FAILED),
+                oldestCreatedAt(OutboxStatus.PENDING),
+                oldestCreatedAt(OutboxStatus.PROCESSING)
         );
     }
 
@@ -216,5 +218,16 @@ public class MongoMarketCatalogOutboxRepository implements MarketCatalogOutboxRe
                 Query.query(Criteria.where("status").is(status)),
                 MarketCatalogOutboxDocument.class
         );
+    }
+
+    private Optional<Instant> oldestCreatedAt(OutboxStatus status) {
+        var query = Query.query(Criteria.where("status").is(status))
+                .with(Sort.by(Sort.Direction.ASC, "createdAt"))
+                .limit(1);
+        return Optional.ofNullable(mongoTemplate.findOne(
+                        query,
+                        MarketCatalogOutboxDocument.class
+                ))
+                .map(MarketCatalogOutboxDocument::createdAt);
     }
 }
