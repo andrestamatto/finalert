@@ -4,6 +4,7 @@ import br.dev.andrestamatto.finalert.marketdataingestionservice.application.even
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.exception.EventPublicationException;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.application.ports.out.publishers.MarketPriceUpdatedEventPublisher;
 import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.adapter.out.rabbitmq.config.RabbitMqPublisherProperties;
+import br.dev.andrestamatto.finalert.marketdataingestionservice.infrastructure.observability.MarketPriceMetrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -20,10 +21,16 @@ public class RabbitMqMarketPriceUpdatedEventPublisher implements MarketPriceUpda
 
     private final RabbitTemplate rabbitTemplate;
     private final RabbitMqPublisherProperties rabbitPublishersProperties;
+    private final MarketPriceMetrics metrics;
 
-    public RabbitMqMarketPriceUpdatedEventPublisher(RabbitTemplate rabbitTemplate, RabbitMqPublisherProperties rabbitPublishersProperties) {
+    public RabbitMqMarketPriceUpdatedEventPublisher(
+            RabbitTemplate rabbitTemplate,
+            RabbitMqPublisherProperties rabbitPublishersProperties,
+            MarketPriceMetrics metrics
+    ) {
         this.rabbitTemplate = rabbitTemplate;
         this.rabbitPublishersProperties = rabbitPublishersProperties;
+        this.metrics = metrics;
     }
 
     @Override
@@ -73,6 +80,7 @@ public class RabbitMqMarketPriceUpdatedEventPublisher implements MarketPriceUpda
             throw publicationException(marketPriceUpdatedEvent, exception);
         }
 
+        metrics.recordPublicationSuccess();
         log.info("MarketPriceUpdatedEvent confirmed by RabbitMQ: eventId={}", marketPriceUpdatedEvent.eventId());
     }
 
