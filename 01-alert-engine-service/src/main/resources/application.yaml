@@ -13,6 +13,7 @@ spring:
     publisher-returns: true
     listener:
       simple:
+        observation-enabled: ${RABBITMQ_OBSERVATION_ENABLED:true}
         default-requeue-rejected: false
         retry:
           enabled: true
@@ -21,9 +22,26 @@ spring:
           multiplier: 2.0
           max-interval: 30s
     template:
+      observation-enabled: ${RABBITMQ_OBSERVATION_ENABLED:true}
       mandatory: true
       retry:
         enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health,info,prometheus}
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:0.1}
 
 finalert:
   rabbitmq:
