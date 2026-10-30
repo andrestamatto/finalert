@@ -28,18 +28,28 @@ Esta etapa não pretende:
 - instrumentar cada método da aplicação;
 - criar dependência do domínio em Grafana, Prometheus, Loki, Tempo ou OpenTelemetry.
 
-## 3. Estado atual
+## 3. Estado da implementação
 
-| Componente | Estado atual | Lacuna principal |
-|---|---|---|
-| `alert-engine-service` | Possui Spring Boot Actuator e logs em console | Não exporta métricas Prometheus nem traces |
-| `market-data-ingestion-service` | Possui Actuator e endpoint `marketcatalogoutbox` | Resumo da outbox não é uma métrica consultável e alertável |
-| `notification-service` | Possui logs em console | Não possui Actuator, métricas ou traces |
-| RabbitMQ | Possui management UI e DLQs | Não é coletado centralmente pelo Prometheus |
-| PostgreSQL e MongoDB | Possuem health checks do Compose | Sem painéis de capacidade ou desempenho |
-| Docker Compose | Centraliza a execução local | Logs precisam ser consultados container por container |
+### Entregue nesta fase
 
-Todos os serviços já definem `spring.application.name`, usam SLF4J e trocam mensagens pelo RabbitMQ. O fluxo principal também possui `eventId` e `alertId`, que são úteis para correlação em logs e investigação, mas não devem se tornar labels de métricas.
+| Componente | Implementação disponível |
+|---|---|
+| Três aplicações | Actuator, health probes, métricas Prometheus, tracing OTLP e logs JSON ECS |
+| RabbitMQ | Plugin Prometheus habilitado e observação de templates/listeners nas aplicações |
+| Stack local | Grafana, Prometheus, Loki, Tempo e Alloy em overlay opcional do Compose |
+| Grafana | Datasources, correlação entre sinais e dashboard `FinAlert Overview` provisionados |
+| Operação | Targets, logs e traces validáveis pelas funções de teste e pelo Grafana |
+
+O Prometheus coleta métricas por scrape; somente traces são enviados por OTLP ao Alloy. Isso evita publicar o mesmo sinal por dois caminhos e mantém uma falha da stack fora do fluxo de negócio.
+
+### Próximas evoluções
+
+- métricas específicas de negócio e gauges de outbox descritos na seção 7.2;
+- persistência e restauração de contexto W3C nas outboxes para manter um único trace através da fronteira assíncrona;
+- exporters dedicados para PostgreSQL e MongoDB, apenas quando houver necessidade operacional;
+- calibração dos alertas com dados reais e roteamento externo de incidentes.
+
+Todos os serviços definem `spring.application.name`, usam SLF4J e trocam mensagens pelo RabbitMQ. O fluxo principal também possui `eventId` e `alertId`, úteis para correlação em logs e investigação, mas que não devem se tornar labels de métricas.
 
 ## 4. Decisão arquitetural
 
@@ -366,7 +376,7 @@ O Compose é uma topologia de desenvolvimento, não um blueprint de alta disponi
 
 ## 14. Estratégia incremental
 
-### Fase 1 — Base e métricas
+### Fase 1 — Base e métricas automáticas — entregue
 
 1. adicionar Actuator ao notification service;
 2. adicionar registry Prometheus aos três serviços;
@@ -382,23 +392,25 @@ O Compose é uma topologia de desenvolvimento, não um blueprint de alta disponi
 3. criar alertas de outbox, catálogo, preço e notificação;
 4. testar cardinalidade e comportamento sob retry.
 
-### Fase 3 — Logs centralizados
+### Fase 3 — Logs centralizados — base entregue
 
 1. habilitar JSON ECS em stdout;
 2. adicionar Alloy e Loki;
 3. provisionar datasource e consultas por serviço, nível, `eventId` e `alertId`;
-4. validar redaction de PII e credenciais.
+4. validar continuamente redaction de PII e credenciais.
 
-### Fase 4 — Tracing distribuído
+### Fase 4 — Tracing distribuído — instrumentação base entregue
 
 1. adicionar starter OpenTelemetry e Tempo;
 2. configurar OTLP para Alloy;
 3. habilitar observação do RabbitTemplate e listeners;
-4. persistir contexto W3C nas outboxes;
+4. persistir contexto W3C nas outboxes — pendente;
 5. correlacionar logs e traces no Grafana;
 6. validar o fluxo ponta a ponta e redeliveries.
 
 Cada fase deve manter build, testes e fluxo funcional verdes. A stack pode ser entregue no mesmo ciclo de desenvolvimento, mas em commits pequenos e reversíveis conforme essas fronteiras.
+
+O roteiro reproduzível da entrega atual está em [Operação e teste da observabilidade local](testing-observability.md).
 
 ## 15. Testes e critérios de aceite
 
@@ -433,6 +445,8 @@ Critérios mínimos de aceite:
 - nenhuma label de alta cardinalidade ou PII;
 - documentação de execução e troubleshooting reproduzível;
 - observabilidade indisponível não interrompe o FinAlert.
+
+Na entrega atual, os critérios relativos à base técnica, dashboard, logs e traces estão atendidos. Métricas de negócio, gauges de outbox e continuidade de trace através das outboxes permanecem critérios das fases seguintes, não limitações ocultas desta entrega.
 
 ## 16. Operação e troubleshooting
 

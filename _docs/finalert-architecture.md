@@ -2,7 +2,7 @@
 
 ## 1. Visão geral
 
-O FinAlert é uma solução orientada a eventos que cadastra alertas de preço, monitora cotações e envia e-mails quando uma condição é satisfeita. A solução é formada por três serviços, RabbitMQ, bancos exclusivos por serviço e um servidor SMTP local (Mailpit).
+O FinAlert é uma solução orientada a eventos que cadastra alertas de preço, monitora cotações e envia e-mails quando uma condição é satisfeita. A solução é formada por três serviços, RabbitMQ, bancos exclusivos por serviço e um servidor SMTP local (Mailpit). Uma stack opcional de observabilidade coleta métricas, logs e traces sem participar do processamento de negócio.
 
 ## 2. Fluxo completo
 
@@ -190,7 +190,32 @@ Os dois bancos PostgreSQL são executados em instâncias e volumes distintos no 
 
 O histórico de todas as cotações não é persistido: não é necessário para avaliar o preço atual e aumentaria armazenamento e complexidade operacional. Pode ser introduzido futuramente como uma projeção independente, sem alterar os contratos existentes.
 
-## 7. Execução local
+## 7. Observabilidade
+
+A observabilidade local é executada em um overlay opcional e preserva a independência dos microsserviços:
+
+```mermaid
+flowchart LR
+    Apps[Serviços Spring Boot] -->|/actuator/prometheus| Prometheus
+    Rabbit[RabbitMQ /metrics] --> Prometheus
+    Apps -->|traces OTLP| Alloy
+    Docker[stdout dos containers] --> Alloy
+    Alloy --> Loki
+    Alloy --> Tempo
+    Prometheus --> Grafana
+    Loki --> Grafana
+    Tempo --> Grafana
+```
+
+- Prometheus coleta métricas das aplicações e do RabbitMQ;
+- Alloy descobre containers, encaminha logs estruturados ao Loki e traces OTLP ao Tempo;
+- Grafana é a única interface exposta no host e recebe datasources e dashboards por provisionamento;
+- falhas da stack não impedem criação de alertas, ingestão de preços ou notificações;
+- o domínio não depende de APIs de Grafana, Prometheus, Loki, Tempo ou OpenTelemetry.
+
+Métricas específicas de negócio, gauges de outbox e continuidade do contexto W3C através das outboxes fazem parte das próximas fases. A decisão completa está em [Proposta de observabilidade](finalert-observability.md), e o uso local está em [Operação e teste da observabilidade](testing-observability.md).
+
+## 8. Execução local
 
 Pré-requisitos: Git Bash, Java 21 e Docker Compose disponível no WSL.
 
@@ -217,6 +242,7 @@ Serviços locais:
 | Notification service | `http://localhost:8082` |
 | Mailpit | `http://localhost:8025` |
 | RabbitMQ management | `http://localhost:15672` |
+| Grafana (overlay opcional) | `http://localhost:3000` |
 
 Exemplo de criação:
 
@@ -227,9 +253,9 @@ curl -X POST http://localhost:8080/alerts/USD-BRL \
   -d '{"userEmail":"user@example.com","targetPrice":5.10,"triggerOperator":"GTE"}'
 ```
 
-## 8. Evoluções independentes do fluxo principal
+## 9. Evoluções independentes do fluxo principal
 
 - endpoint de cancelamento, publicando um evento que também remova o monitoramento;
 - provedor de e-mail com chave idempotente e rastreamento de entrega;
-- observabilidade distribuída com trace ID nos eventos;
+- continuidade do contexto de trace através das outboxes;
 - projeção opcional de histórico de cotações.
