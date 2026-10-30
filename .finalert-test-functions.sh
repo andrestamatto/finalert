@@ -220,6 +220,119 @@ finalert_check_dlqs() {
   return "$result"
 }
 
+_finalert_grafana_api() {
+  local path="$1"
+  local grafana_url="${FINALERT_GRAFANA_URL:-http://localhost:3000}"
+  local grafana_user="${FINALERT_GRAFANA_USERNAME:-admin}"
+  local grafana_password="${FINALERT_GRAFANA_PASSWORD:-finalert-local}"
+
+  curl -fsS \
+    --connect-timeout 3 \
+    --max-time 15 \
+    -u "$grafana_user:$grafana_password" \
+    "$grafana_url$path"
+}
+
+_finalert_jq() {
+  command -v jq >/dev/null 2>&1 || return 127
+  jq "$@"
+}
+
+finalert_observability_status() {
+  local check name url response
+  local result=0
+  local checks=(
+    'alert-engine|http://localhost:8080/actuator/health'
+    'market-data-ingestion|http://localhost:8081/actuator/health'
+    'notification|http://localhost:8082/actuator/health'
+    "grafana|${FINALERT_GRAFANA_URL:-http://localhost:3000}/api/health"
+  )
+
+  for check in "${checks[@]}"; do
+    name="${check%%|*}"
+    url="${check#*|}"
+    if response="$(curl -fsS --connect-timeout 3 --max-time 10 "$url" 2>/dev/null)"; then
+      printf '%-28s %s\n' "$name" 'UP'
+    else
+      printf '%-28s %s\n' "$name" 'DOWN'
+      result=1
+    fi
+  done
+
+  return "$result"
+}
+
+finalert_prometheus_targets() {
+  local response
+  response="$(_finalert_grafana_api \
+    '/api/datasources/proxy/uid/prometheus/api/v1/targets')" || return 1
+
+  if _finalert_jq --version >/dev/null 2>&1; then
+    printf '%s' "$response" \
+      | _finalert_jq -r \
+        '.data.activeTargets[] | [.labels.job, .health, .lastError] | @tsv'
+  else
+    printf 'Targets UP: %s\n' "$({
+      printf '%s' "$response" | grep -o '"health":"up"' || true
+    } | wc -l | tr -d ' ')"
+  fi
+
+  [[ "$response" == *'"health":"up"'* ]] \
+    && [[ "$response" != *'"health":"down"'* ]]
+}
+
+finalert_loki_services() {
+  local response service
+  local result=0
+  response="$(_finalert_grafana_api \
+    '/api/datasources/proxy/uid/loki/loki/api/v1/label/service_name/values')" \
+    || return 1
+
+  for service in alert-engine market-data-ingestion notification; do
+    if [[ "$response" == *"\"$service\""* ]]; then
+      printf '%-28s %s\n' "$service" 'logs disponíveis'
+    else
+      printf '%-28s %s\n' "$service" 'sem logs'
+      result=1
+    fi
+  done
+
+  return "$result"
+}
+
+finalert_tempo_traces() {
+  local response
+  response="$(_finalert_grafana_api \
+    '/api/datasources/proxy/uid/tempo/api/search?limit=5')" || return 1
+
+  if _finalert_jq --version >/dev/null 2>&1; then
+    printf '%s' "$response" \
+      | _finalert_jq -r \
+        '.traces[] | [.traceID, .rootServiceName, .rootTraceName] | @tsv'
+  else
+    printf 'Traces recentes: %s\n' "$({
+      printf '%s' "$response" | grep -o '"traceID":"' || true
+    } | wc -l | tr -d ' ')"
+  fi
+
+  [[ "$response" == *'"traces":[{'* ]]
+}
+
+finalert_check_observability() {
+  local result=0
+
+  printf '%s\n' '== Saúde =='
+  finalert_observability_status || result=1
+  printf '\n%s\n' '== Targets Prometheus =='
+  finalert_prometheus_targets || result=1
+  printf '\n%s\n' '== Serviços no Loki =='
+  finalert_loki_services || result=1
+  printf '\n%s\n' '== Traces recentes no Tempo =='
+  finalert_tempo_traces || result=1
+
+  return "$result"
+}
+
 finalert_run_e2e() {
   local emails_before emails_after
 
