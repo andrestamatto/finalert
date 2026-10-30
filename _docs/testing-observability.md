@@ -99,11 +99,17 @@ Consultas úteis no **Explore**:
 
 - Prometheus: `up{job=~"finalert-.*"}`;
 - Prometheus: `rabbitmq_queue_messages`;
+- Prometheus: `finalert_outbox_events`;
+- Prometheus: `finalert_outbox_oldest_age_seconds{status=~"PENDING|PROCESSING"}`;
+- Prometheus: `finalert_market_price_last_success_age_seconds`;
+- Prometheus: `finalert_notification_process_total`;
 - Loki: `{service_name="alert-engine"}`;
 - Loki: `{service_name="notification"} | json | level="ERROR"`;
 - Tempo: selecione **Search** e filtre por `service.name`.
 
 Prometheus, Loki e Tempo não publicam portas no host. Consultas automatizadas passam pelo proxy autenticado do Grafana, como fazem as funções do dotfile.
+
+Antes da primeira cotação confirmada pelo RabbitMQ, `finalert_market_price_last_success_age_seconds` possui valor `NaN`. Isso representa ausência de amostra e evita um alerta falso logo após a inicialização. Depois de `finalert_run_e2e`, a métrica passa a informar a idade, em segundos, da última publicação confirmada.
 
 ## 6. Diagnóstico
 

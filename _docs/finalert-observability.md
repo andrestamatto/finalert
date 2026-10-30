@@ -38,13 +38,14 @@ Esta etapa não pretende:
 | RabbitMQ | Plugin Prometheus habilitado e observação de templates/listeners nas aplicações |
 | Stack local | Grafana, Prometheus, Loki, Tempo e Alloy em overlay opcional do Compose |
 | Grafana | Datasources, correlação entre sinais e dashboard `FinAlert Overview` provisionados |
+| Métricas de negócio | Estado e idade das outboxes, idade da última cotação confirmada e resultado do processamento de notificações |
 | Operação | Targets, logs e traces validáveis pelas funções de teste e pelo Grafana |
 
 O Prometheus coleta métricas por scrape; somente traces são enviados por OTLP ao Alloy. Isso evita publicar o mesmo sinal por dois caminhos e mantém uma falha da stack fora do fluxo de negócio.
 
 ### Próximas evoluções
 
-- métricas específicas de negócio e gauges de outbox descritos na seção 7.2;
+- contadores e timers adicionais do catálogo, alertas e publicação descritos na seção 7.2;
 - persistência e restauração de contexto W3C nas outboxes para manter um único trace através da fronteira assíncrona;
 - exporters dedicados para PostgreSQL e MongoDB, apenas quando houver necessidade operacional;
 - calibração dos alertas com dados reais e roteamento externo de incidentes.
@@ -385,12 +386,14 @@ O Compose é uma topologia de desenvolvimento, não um blueprint de alta disponi
 5. habilitar métricas do RabbitMQ;
 6. criar dashboards de saúde, JVM, HTTP, RabbitMQ e DLQs.
 
-### Fase 2 — Métricas de negócio e outbox
+### Fase 2 — Métricas de negócio e outbox — entrega inicial concluída
 
-1. instrumentar contadores, timers e gauges listados neste documento;
-2. substituir dependência operacional do endpoint `marketcatalogoutbox` por métricas, mantendo redrive administrativo;
-3. criar alertas de outbox, catálogo, preço e notificação;
-4. testar cardinalidade e comportamento sob retry.
+1. expor quantidade e idade mais antiga das outboxes PostgreSQL e MongoDB por snapshots agendados;
+2. expor idade da última cotação confirmada pelo RabbitMQ, sem falso positivo antes da primeira confirmação;
+3. contar resultados do processamento de notificações após o retorno do caso de uso transacional;
+4. manter o endpoint administrativo `marketcatalogoutbox` para redrive, sem depender dele para monitoramento;
+5. criar painéis e regras para outbox, preço e notificação;
+6. adicionar, conforme necessidade operacional, os demais contadores e timers da seção 7.2.
 
 ### Fase 3 — Logs centralizados — base entregue
 
@@ -418,7 +421,7 @@ O roteiro reproduzível da entrega atual está em [Operação e teste da observa
 
 - context tests comprovam criação dos registries e configuração de observação;
 - testes unitários validam métricas de negócio sem depender de Grafana;
-- testes das outboxes validam captura e restauração opcional do contexto;
+- testes futuros das outboxes devem validar captura e restauração opcional do contexto W3C;
 - testes garantem que falha de exportação OTLP não falha o caso de uso;
 - testes de configuração verificam exposição somente dos endpoints esperados.
 
@@ -446,7 +449,7 @@ Critérios mínimos de aceite:
 - documentação de execução e troubleshooting reproduzível;
 - observabilidade indisponível não interrompe o FinAlert.
 
-Na entrega atual, os critérios relativos à base técnica, dashboard, logs e traces estão atendidos. Métricas de negócio, gauges de outbox e continuidade de trace através das outboxes permanecem critérios das fases seguintes, não limitações ocultas desta entrega.
+Na entrega atual, os critérios relativos à base técnica, dashboard, logs, traces e métricas essenciais de negócio/outbox estão atendidos. A continuidade de trace através das outboxes e as métricas adicionais da seção 7.2 permanecem evoluções explícitas.
 
 ## 16. Operação e troubleshooting
 

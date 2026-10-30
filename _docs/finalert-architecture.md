@@ -213,7 +213,7 @@ flowchart LR
 - falhas da stack não impedem criação de alertas, ingestão de preços ou notificações;
 - o domínio não depende de APIs de Grafana, Prometheus, Loki, Tempo ou OpenTelemetry.
 
-Métricas específicas de negócio, gauges de outbox e continuidade do contexto W3C através das outboxes fazem parte das próximas fases. A decisão completa está em [Proposta de observabilidade](finalert-observability.md), e o uso local está em [Operação e teste da observabilidade](testing-observability.md).
+As aplicações expõem métricas de baixa cardinalidade para quantidade e idade das outboxes, idade da última cotação confirmada e resultados do processamento de notificações. Os snapshots de outbox são atualizados por scheduler, de modo que o scrape do Prometheus nunca consulta PostgreSQL ou MongoDB. A continuidade do contexto W3C através das outboxes e métricas adicionais continuam no roadmap. A decisão completa está em [Proposta de observabilidade](finalert-observability.md), e o uso local está em [Operação e teste da observabilidade](testing-observability.md).
 
 ## 8. Execução local
 
