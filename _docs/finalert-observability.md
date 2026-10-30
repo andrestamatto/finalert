@@ -90,24 +90,19 @@ flowchart LR
 
 ## 5. Topologia local
 
-Os componentes serão adicionados ao Compose raiz sob o profile `observability`. Assim, o fluxo funcional continua podendo ser executado sem a stack, e a observabilidade é habilitada explicitamente:
+Os componentes ficam em `compose.observability.yaml`, um overlay do Compose raiz, sob o profile `observability`. Assim, o fluxo funcional continua podendo ser executado sem a stack, e a observabilidade é habilitada explicitamente:
 
 ```bash
-docker compose --profile observability up --build -d
+docker compose -f compose.yaml -f compose.observability.yaml --profile observability up --build -d
 ```
 
-Portas previstas no host, vinculadas a `127.0.0.1`:
+Somente a interface unificada é publicada no host, vinculada a `127.0.0.1`:
 
 | Componente | Porta | Uso |
 |---|---:|---|
 | Grafana | `3000` | Interface unificada |
-| Prometheus | `9090` | Diagnóstico de scrape e PromQL |
-| Loki | `3100` | API local; normalmente acessada pelo Grafana |
-| Tempo | `3200` | API local; normalmente acessada pelo Grafana |
-| Alloy | `12345` | Interface de diagnóstico do coletor |
-| Alloy OTLP/HTTP | `4318` | Recepção de traces dentro da rede Compose |
 
-Somente Grafana precisa ser usado rotineiramente. As demais portas existem para diagnóstico local e não constituem uma proposta de exposição em produção.
+Prometheus, Loki, Tempo e Alloy são acessíveis apenas dentro da rede Compose. Seus endpoints de diagnóstico, ingestão e consulta são consumidos pelo Grafana ou por outros containers, sem exposição adicional no WSL ou no Windows.
 
 Volumes persistentes serão separados para Grafana, Prometheus, Loki e Tempo. `docker compose down` preserva telemetria; `docker compose down -v` remove todo o histórico local.
 
@@ -417,7 +412,7 @@ Cada fase deve manter build, testes e fluxo funcional verdes. A stack pode ser e
 
 ### Validação integrada
 
-1. subir a solução com o profile `observability`;
+1. subir a solução com o overlay e o profile `observability`;
 2. confirmar todos os targets Prometheus em estado `UP`;
 3. executar `source ./.finalert-test-functions.sh && finalert_run_e2e`;
 4. localizar no Grafana as métricas do alerta criado e da notificação;
@@ -454,9 +449,9 @@ Ordem recomendada de diagnóstico:
 Comandos de contingência continuam válidos:
 
 ```bash
-docker compose ps
+docker compose -f compose.yaml -f compose.observability.yaml --profile observability ps
 docker compose logs --tail=200 alert-engine market-data-ingestion notification
-docker compose --profile observability logs --tail=200 grafana prometheus loki tempo alloy
+docker compose -f compose.yaml -f compose.observability.yaml --profile observability logs --tail=200 grafana prometheus loki tempo alloy
 ```
 
 Falhas comuns:
